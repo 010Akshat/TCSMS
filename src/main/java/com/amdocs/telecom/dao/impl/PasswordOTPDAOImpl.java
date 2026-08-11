@@ -41,7 +41,10 @@ public class PasswordOTPDAOImpl implements PasswordOTPDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 
@@ -77,7 +80,10 @@ public class PasswordOTPDAOImpl implements PasswordOTPDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
 
         return null;
@@ -99,7 +105,10 @@ public class PasswordOTPDAOImpl implements PasswordOTPDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 }

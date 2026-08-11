@@ -21,4 +21,6 @@ public interface CustomerService {
     void update(Customer customer);
 
     void delete(long customerId);
+
+    void register(Customer customer, String password);
 }

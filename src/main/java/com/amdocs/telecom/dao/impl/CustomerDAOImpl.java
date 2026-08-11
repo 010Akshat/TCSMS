@@ -1,23 +1,20 @@
 package com.amdocs.telecom.dao.impl;
 
 import com.amdocs.telecom.dao.CustomerDAO;
-import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.model.AccountStatus;
-
-import java.util.Collections;
-import java.util.List;
-import java.time.LocalDateTime;
-
+import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.util.DBConnection;
-import java.sql.SQLException;
+
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.sql.ResultSet;
-import java.sql.Statement;
 
 
 public class CustomerDAOImpl implements CustomerDAO {
@@ -57,7 +54,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Failed to save customer.",
+                    e
+            );
         }
     }
 
@@ -121,7 +121,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
 
         return null;
@@ -187,7 +190,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
 
         return null;
@@ -253,7 +259,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
 
         return null;
@@ -320,7 +329,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
 
         return null;
@@ -384,7 +396,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
 
         return customers;
@@ -430,7 +445,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 
@@ -447,7 +465,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 
@@ -467,7 +488,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 
@@ -498,7 +522,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 
@@ -529,7 +556,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 
@@ -550,7 +580,10 @@ public class CustomerDAOImpl implements CustomerDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Database operation failed.",
+                    e
+            );
         }
     }
 }

@@ -6,16 +6,19 @@ import com.amdocs.telecom.dao.PasswordOTPDAO;
 import com.amdocs.telecom.dao.impl.CustomerDAOImpl;
 import com.amdocs.telecom.dao.impl.LoginHistoryDAOImpl;
 import com.amdocs.telecom.dao.impl.PasswordOTPDAOImpl;
+import com.amdocs.telecom.model.AccountStatus;
 import com.amdocs.telecom.model.Customer;
-import com.amdocs.telecom.service.AuthenticationService;
-import com.amdocs.telecom.security.CaptchaGenerator;
-
+import com.amdocs.telecom.model.LoginHistory;
 import com.amdocs.telecom.model.PasswordOTP;
+import com.amdocs.telecom.security.CaptchaGenerator;
+import com.amdocs.telecom.security.PasswordUtil;
+import com.amdocs.telecom.service.AuthenticationService;
 import com.amdocs.telecom.service.OTPService;
-import com.amdocs.telecom.service.impl.OTPServiceImpl;
+import com.amdocs.telecom.validation.CustomerValidator;
 
-public class AuthenticationServiceImpl
-        implements AuthenticationService {
+import java.time.LocalDateTime;
+
+public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final CustomerDAO customerDAO;
     private final LoginHistoryDAO loginHistoryDAO;
@@ -41,33 +44,53 @@ public class AuthenticationServiceImpl
 
         // 1. Validate CAPTCHA
         if (!captchaGenerator.validateCaptcha(captcha, captchaAnswer)) {
+
             System.out.println("Invalid CAPTCHA.");
             return null;
         }
 
         // 2. Find customer
-        Customer customer = customerDAO.findByUsername(username);
+        Customer customer =
+                customerDAO.findByUsername(username);
 
         if (customer == null) {
-            System.out.println("Invalid username or password.");
-            return null;
-        }
 
-        // 3. Check temporary account lock
-        if (customer.getLockedUntil() != null &&
-                customer.getLockedUntil().isAfter(
-                        java.time.LocalDateTime.now())) {
-
-            System.out.println("Account is temporarily locked.");
             System.out.println(
-                    "Locked until: " + customer.getLockedUntil()
+                    "Invalid username or password."
             );
 
             return null;
         }
 
-        // 4. Verify password
-        if (!com.amdocs.telecom.security.PasswordUtil.verifyPassword(
+        // 3. Check account status
+        if (customer.getAccountStatus() != AccountStatus.ACTIVE) {
+
+            System.out.println(
+                    "Account is not active."
+            );
+
+            return null;
+        }
+
+        // 4. Check temporary account lock
+        if (customer.getLockedUntil() != null &&
+                customer.getLockedUntil().isAfter(
+                        LocalDateTime.now())) {
+
+            System.out.println(
+                    "Account is temporarily locked."
+            );
+
+            System.out.println(
+                    "Locked until: " +
+                            customer.getLockedUntil()
+            );
+
+            return null;
+        }
+
+        // 5. Verify password
+        if (!PasswordUtil.verifyPassword(
                 password,
                 customer.getPasswordHash())) {
 
@@ -81,19 +104,19 @@ public class AuthenticationServiceImpl
 
             // Record failed login
             loginHistoryDAO.save(
-                    new com.amdocs.telecom.model.LoginHistory(
+                    new LoginHistory(
                             0,
                             customer.getCustomerId(),
-                            java.time.LocalDateTime.now(),
+                            LocalDateTime.now(),
                             "FAILED"
                     )
             );
 
-            // 5. Lock after 3 failed attempts
+            // 6. Lock after 3 failed attempts
             if (failedAttempts >= 3) {
 
-                java.time.LocalDateTime lockedUntil =
-                        java.time.LocalDateTime.now()
+                LocalDateTime lockedUntil =
+                        LocalDateTime.now()
                                 .plusMinutes(10);
 
                 customerDAO.updateLockStatus(
@@ -106,7 +129,8 @@ public class AuthenticationServiceImpl
                 );
 
                 System.out.println(
-                        "Account locked until: " + lockedUntil
+                        "Account locked until: " +
+                                lockedUntil
                 );
 
             } else {
@@ -116,14 +140,15 @@ public class AuthenticationServiceImpl
                 );
 
                 System.out.println(
-                        "Failed attempts: " + failedAttempts
+                        "Failed attempts: " +
+                                failedAttempts
                 );
             }
 
             return null;
         }
 
-        // 6. Successful login
+        // 7. Successful login
         customerDAO.updateFailedLoginAttempts(
                 customer.getCustomerId(),
                 0
@@ -134,17 +159,17 @@ public class AuthenticationServiceImpl
                 null
         );
 
-        java.time.LocalDateTime loginTime =
-                java.time.LocalDateTime.now();
+        LocalDateTime loginTime =
+                LocalDateTime.now();
 
         customerDAO.updateLastLogin(
                 customer.getCustomerId(),
                 loginTime
         );
 
-        // 7. Record successful login
+        // 8. Record successful login
         loginHistoryDAO.save(
-                new com.amdocs.telecom.model.LoginHistory(
+                new LoginHistory(
                         0,
                         customer.getCustomerId(),
                         loginTime,
@@ -152,14 +177,37 @@ public class AuthenticationServiceImpl
                 )
         );
 
-        System.out.println("Login successful!");
+        System.out.println(
+                "Login successful!"
+        );
+
         System.out.println(
                 "Welcome, " +
-                        customer.getFirstName() + " " +
+                        customer.getFirstName() +
+                        " " +
                         customer.getLastName()
         );
 
         return customer;
+    }
+
+    @Override
+    public PasswordOTP generatePasswordResetOTP(
+            long customerId) {
+
+        Customer customer =
+                customerDAO.findById(customerId);
+
+        if (customer == null) {
+
+            System.out.println(
+                    "Customer not found."
+            );
+
+            return null;
+        }
+
+        return otpService.generateOTP(customerId);
     }
 
     @Override
@@ -178,17 +226,28 @@ public class AuthenticationServiceImpl
             long customerId,
             String newPassword) {
 
-        Customer customer = customerDAO.findById(customerId);
+        Customer customer =
+                customerDAO.findById(customerId);
 
         if (customer == null) {
-            System.out.println("Customer not found.");
+
+            System.out.println(
+                    "Customer not found."
+            );
+
             return false;
         }
 
-        // Hash the new password
+        // Validate new password
+        CustomerValidator.validatePassword(
+                newPassword
+        );
+
+        // Hash new password
         String passwordHash =
-                com.amdocs.telecom.security.PasswordUtil
-                        .hashPassword(newPassword);
+                PasswordUtil.hashPassword(
+                        newPassword
+                );
 
         // Update password in database
         customerDAO.updatePassword(
@@ -196,7 +255,9 @@ public class AuthenticationServiceImpl
                 passwordHash
         );
 
-        System.out.println("Password reset successful.");
+        System.out.println(
+                "Password reset successful."
+        );
 
         return true;
     }
@@ -204,10 +265,15 @@ public class AuthenticationServiceImpl
     @Override
     public void logout(long customerId) {
 
-        Customer customer = customerDAO.findById(customerId);
+        Customer customer =
+                customerDAO.findById(customerId);
 
         if (customer == null) {
-            System.out.println("Customer not found.");
+
+            System.out.println(
+                    "Customer not found."
+            );
+
             return;
         }
 
@@ -218,18 +284,5 @@ public class AuthenticationServiceImpl
                         customer.getLastName() +
                         " logged out successfully."
         );
-    }
-
-    @Override
-    public PasswordOTP generatePasswordResetOTP(long customerId) {
-
-        Customer customer = customerDAO.findById(customerId);
-
-        if (customer == null) {
-            System.out.println("Customer not found.");
-            return null;
-        }
-
-        return otpService.generateOTP(customerId);
     }
 }
