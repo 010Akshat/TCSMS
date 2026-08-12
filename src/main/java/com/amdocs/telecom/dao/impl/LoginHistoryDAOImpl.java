@@ -35,7 +35,10 @@ public class LoginHistoryDAOImpl implements LoginHistoryDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Failed to save login history.",
+                    e
+            );
         }
     }
 
@@ -71,9 +74,40 @@ public class LoginHistoryDAOImpl implements LoginHistoryDAO {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Failed to retrieve login history.",
+                    e
+            );
         }
 
         return historyList;
+    }
+
+    @Override
+    public void deleteByCustomerId(long customerId) {
+
+        String sql =
+                "DELETE FROM login_history " +
+                        "WHERE customer_id = ?";
+
+        try (Connection connection =
+                     DBConnection.getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+            statement.setLong(
+                    1,
+                    customerId
+            );
+
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Failed to delete customer login history.",
+                    e
+            );
+        }
     }
 }

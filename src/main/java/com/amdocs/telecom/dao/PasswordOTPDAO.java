@@ -9,4 +9,6 @@ public interface PasswordOTPDAO {
     PasswordOTP findLatestByCustomerId(long customerId);
 
     void markAsUsed(long otpId);
+
+    void deleteByCustomerId(long customerId);
 }

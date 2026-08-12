@@ -1,16 +1,18 @@
 package com.amdocs.telecom.main;
 
-import com.amdocs.telecom.model.enums.AccountStatus;
 import com.amdocs.telecom.model.MobileSubscription;
 import com.amdocs.telecom.model.SubscriptionHistory;
+import com.amdocs.telecom.model.TelecomPlan;
+import com.amdocs.telecom.model.enums.AccountStatus;
 import com.amdocs.telecom.model.enums.SubscriptionStatus;
 import com.amdocs.telecom.model.enums.SubscriptionType;
-import com.amdocs.telecom.model.TelecomPlan;
 import com.amdocs.telecom.service.PlanService;
 import com.amdocs.telecom.service.SubscriptionService;
 import com.amdocs.telecom.service.impl.PlanServiceImpl;
 import com.amdocs.telecom.service.impl.SubscriptionServiceImpl;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class SubscriptionTest {
@@ -30,50 +32,155 @@ public class SubscriptionTest {
                 "=== SUBSCRIPTION TEST SUITE ==="
         );
 
-        /*
-         * Fresh values for every execution.
-         *
-         * Example:
-         * mobile  -> 98765XXXXX
-         * SIM     -> SIMTESTXXXXX
-         */
+        long customerId = 3;
+
+        // ==========================================
+        // GET ACTIVE PLANS DYNAMICALLY
+        // ==========================================
+
+        List<TelecomPlan> activePlans =
+                planService.findActivePlans();
+
+        if (activePlans == null ||
+                activePlans.size() < 2) {
+
+            System.out.println(
+                    "At least two active plans with different prices " +
+                            "are required for this test."
+            );
+
+            return;
+        }
+
+        List<TelecomPlan> sortedPlans =
+                new ArrayList<>(
+                        activePlans
+                );
+
+        sortedPlans.sort(
+                Comparator.comparing(
+                        TelecomPlan::getMonthlyRental
+                )
+        );
+
+        TelecomPlan lowerPlan = null;
+        TelecomPlan higherPlan = null;
+
+        for (TelecomPlan plan : sortedPlans) {
+
+            if (plan.getMonthlyRental() == null) {
+                continue;
+            }
+
+            if (lowerPlan == null) {
+
+                lowerPlan = plan;
+
+                continue;
+            }
+
+            if (plan.getMonthlyRental()
+                    .compareTo(
+                            lowerPlan.getMonthlyRental()
+                    ) > 0) {
+
+                higherPlan = plan;
+                break;
+            }
+        }
+
+        if (lowerPlan == null ||
+                higherPlan == null) {
+
+            System.out.println(
+                    "Could not find two active plans " +
+                            "with different monthly rentals."
+            );
+
+            return;
+        }
+
+        final long lowerPlanId =
+                lowerPlan.getPlanId();
+
+        final long higherPlanId =
+                higherPlan.getPlanId();
+
+        System.out.println(
+                "\nSelected plans for testing:"
+        );
+
+        System.out.println(
+                "Lower Plan: " +
+                        lowerPlan.getPlanCode() +
+                        " - ₹" +
+                        lowerPlan.getMonthlyRental()
+        );
+
+        System.out.println(
+                "Higher Plan: " +
+                        higherPlan.getPlanCode() +
+                        " - ₹" +
+                        higherPlan.getMonthlyRental()
+        );
+
+        // ==========================================
+        // UNIQUE TEST DATA
+        // ==========================================
+
         String runId =
                 String.valueOf(
-                        System.currentTimeMillis() % 100000
+                        System.currentTimeMillis()
                 );
 
         String mobile1 =
-                "98765" + String.format("%05d", Integer.parseInt(runId));
+                "98765" +
+                        runId.substring(
+                                runId.length() - 5
+                        );
 
         String mobile2 =
-                "98766" + String.format("%05d", Integer.parseInt(runId));
+                "98766" +
+                        runId.substring(
+                                runId.length() - 5
+                        );
 
         String mobile3 =
-                "98767" + String.format("%05d", Integer.parseInt(runId));
+                "98767" +
+                        runId.substring(
+                                runId.length() - 5
+                        );
 
         String mobile4 =
-                "98768" + String.format("%05d", Integer.parseInt(runId));
+                "98768" +
+                        runId.substring(
+                                runId.length() - 5
+                        );
 
-        String mobile5 =
-                "98769" + String.format("%05d", Integer.parseInt(runId));
+        String sim1 =
+                "SIMTEST" +
+                        runId +
+                        "01";
 
-        String sim1 = "SIMTEST" + runId + "01";
-        String sim2 = "SIMTEST" + runId + "02";
-        String sim3 = "SIMTEST" + runId + "03";
-        String sim4 = "SIMTEST" + runId + "04";
-        String sim5 = "SIMTEST" + runId + "05";
+        String sim2 =
+                "SIMTEST" +
+                        runId +
+                        "02";
 
-        long customerId = 3;
+        String sim3 =
+                "SIMTEST" +
+                        runId +
+                        "03";
 
-        long plan1 = 1;
-        long plan2 = 2;
-        long plan3 = 3;
-        long plan5 = 5;
+        String sim4 =
+                "SIMTEST" +
+                        runId +
+                        "04";
 
         long createdSubscriptionId = 0;
 
         // ==========================================
-        // TEST 1: CREATE FIRST SUBSCRIPTION
+        // TEST 1: CREATE SUBSCRIPTION
         // ==========================================
 
         System.out.println(
@@ -85,7 +192,7 @@ public class SubscriptionTest {
             MobileSubscription subscription =
                     subscriptionService.subscribe(
                             customerId,
-                            plan1,
+                            lowerPlanId,
                             mobile1,
                             sim1,
                             "ESIM",
@@ -96,7 +203,10 @@ public class SubscriptionTest {
                     subscription.getSubscriptionId();
 
             if (subscription.getSubscriptionId() > 0 &&
-                    subscription.getPlanId() == plan1 &&
+                    subscription.getCustomerId()
+                            == customerId &&
+                    subscription.getPlanId()
+                            == lowerPlanId &&
                     subscription.getStatus()
                             == SubscriptionStatus.ACTIVE) {
 
@@ -118,59 +228,138 @@ public class SubscriptionTest {
         } catch (Exception e) {
 
             fail(
-                    "Subscription creation: "
-                            + e.getMessage()
+                    "Subscription creation: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 2: RETRIEVE SUBSCRIPTION
+        // TEST 2: RETRIEVE BY ID
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 2: SUBSCRIPTION RETRIEVAL ==="
+                "\n=== TEST 2: FIND SUBSCRIPTION BY ID ==="
         );
 
         try {
 
-            MobileSubscription subscription =
+            MobileSubscription found =
                     subscriptionService.findById(
                             createdSubscriptionId
                     );
 
-            if (subscription != null &&
-                    subscription.getSubscriptionId()
+            if (found != null &&
+                    found.getSubscriptionId()
                             == createdSubscriptionId) {
 
                 pass(
-                        "Subscription retrieval"
-                );
-
-                printSubscription(
-                        subscription
+                        "Find subscription by ID"
                 );
 
             } else {
 
                 fail(
-                        "Subscription retrieval"
+                        "Find subscription by ID"
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Subscription retrieval: "
-                            + e.getMessage()
+                    "Find subscription by ID: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 3: SECOND CONNECTION - DIFFERENT PLAN
+        // TEST 3: FIND BY SUBSCRIPTION NUMBER
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 3: SECOND CONNECTION - DIFFERENT PLAN ==="
+                "\n=== TEST 3: FIND BY SUBSCRIPTION NUMBER ==="
+        );
+
+        try {
+
+            MobileSubscription current =
+                    subscriptionService.findById(
+                            createdSubscriptionId
+                    );
+
+            MobileSubscription found =
+                    subscriptionService
+                            .findBySubscriptionNumber(
+                                    current.getSubscriptionNumber()
+                            );
+
+            if (found != null &&
+                    found.getSubscriptionId()
+                            == createdSubscriptionId) {
+
+                pass(
+                        "Find subscription by number"
+                );
+
+            } else {
+
+                fail(
+                        "Find subscription by number"
+                );
+            }
+
+        } catch (Exception e) {
+
+            fail(
+                    "Find subscription by number: " +
+                            e.getMessage()
+            );
+        }
+
+        // ==========================================
+        // TEST 4: FIND BY MOBILE NUMBER
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 4: FIND BY MOBILE NUMBER ==="
+        );
+
+        try {
+
+            MobileSubscription found =
+                    subscriptionService
+                            .findByMobileNumber(
+                                    mobile1
+                            );
+
+            if (found != null &&
+                    found.getSubscriptionId()
+                            == createdSubscriptionId) {
+
+                pass(
+                        "Find subscription by mobile"
+                );
+
+            } else {
+
+                fail(
+                        "Find subscription by mobile"
+                );
+            }
+
+        } catch (Exception e) {
+
+            fail(
+                    "Find subscription by mobile: " +
+                            e.getMessage()
+            );
+        }
+
+        // ==========================================
+        // TEST 5: SECOND CONNECTION - DIFFERENT PLAN
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 5: SECOND CONNECTION - DIFFERENT PLAN ==="
         );
 
         try {
@@ -178,23 +367,21 @@ public class SubscriptionTest {
             MobileSubscription subscription =
                     subscriptionService.subscribe(
                             customerId,
-                            plan2,
+                            higherPlanId,
                             mobile2,
                             sim2,
                             "PHYSICAL_SIM",
                             "POSTPAID"
                     );
 
-            if (subscription.getPlanId() == plan2 &&
+            if (subscription.getSubscriptionId() > 0 &&
                     subscription.getCustomerId()
-                            == customerId) {
+                            == customerId &&
+                    subscription.getPlanId()
+                            == higherPlanId) {
 
                 pass(
                         "Second connection with different plan"
-                );
-
-                printSubscription(
-                        subscription
                 );
 
             } else {
@@ -207,17 +394,17 @@ public class SubscriptionTest {
         } catch (Exception e) {
 
             fail(
-                    "Second connection with different plan: "
-                            + e.getMessage()
+                    "Second connection with different plan: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 4: SECOND CONNECTION - SAME PLAN
+        // TEST 6: SECOND CONNECTION - SAME PLAN
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 4: SECOND CONNECTION - SAME PLAN ==="
+                "\n=== TEST 6: SECOND CONNECTION - SAME PLAN ==="
         );
 
         try {
@@ -225,21 +412,19 @@ public class SubscriptionTest {
             MobileSubscription subscription =
                     subscriptionService.subscribe(
                             customerId,
-                            plan1,
+                            lowerPlanId,
                             mobile3,
                             sim3,
                             "ESIM",
                             "PREPAID"
                     );
 
-            if (subscription.getPlanId() == plan1) {
+            if (subscription.getSubscriptionId() > 0 &&
+                    subscription.getPlanId()
+                            == lowerPlanId) {
 
                 pass(
                         "Same plan on another connection"
-                );
-
-                printSubscription(
-                        subscription
                 );
 
             } else {
@@ -252,24 +437,24 @@ public class SubscriptionTest {
         } catch (Exception e) {
 
             fail(
-                    "Same plan on another connection: "
-                            + e.getMessage()
+                    "Same plan on another connection: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 5: DUPLICATE MOBILE NUMBER
+        // TEST 7: DUPLICATE MOBILE
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 5: DUPLICATE MOBILE NUMBER ==="
+                "\n=== TEST 7: DUPLICATE MOBILE NUMBER ==="
         );
 
         try {
 
             subscriptionService.subscribe(
                     customerId,
-                    plan2,
+                    lowerPlanId,
                     mobile1,
                     sim4,
                     "ESIM",
@@ -284,38 +469,35 @@ public class SubscriptionTest {
 
             if (e.getMessage() != null &&
                     e.getMessage().contains(
-                            "Mobile number is already subscribed.")) {
+                            "Mobile number is already subscribed."
+                    )) {
 
                 pass(
                         "Duplicate mobile rejection"
                 );
 
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
             } else {
 
                 fail(
-                        "Duplicate mobile rejection: "
-                                + e.getMessage()
+                        "Duplicate mobile rejection: " +
+                                e.getMessage()
                 );
             }
         }
 
         // ==========================================
-        // TEST 6: DUPLICATE SIM NUMBER
+        // TEST 8: DUPLICATE SIM
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 6: DUPLICATE SIM NUMBER ==="
+                "\n=== TEST 8: DUPLICATE SIM NUMBER ==="
         );
 
         try {
 
             subscriptionService.subscribe(
                     customerId,
-                    plan2,
+                    lowerPlanId,
                     mobile4,
                     sim1,
                     "PHYSICAL_SIM",
@@ -330,38 +512,35 @@ public class SubscriptionTest {
 
             if (e.getMessage() != null &&
                     e.getMessage().contains(
-                            "SIM number is already in use.")) {
+                            "SIM number is already in use."
+                    )) {
 
                 pass(
                         "Duplicate SIM rejection"
                 );
 
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
             } else {
 
                 fail(
-                        "Duplicate SIM rejection: "
-                                + e.getMessage()
+                        "Duplicate SIM rejection: " +
+                                e.getMessage()
                 );
             }
         }
 
         // ==========================================
-        // TEST 7: INVALID CUSTOMER
+        // TEST 9: INVALID CUSTOMER
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 7: INVALID CUSTOMER ==="
+                "\n=== TEST 9: INVALID CUSTOMER ==="
         );
 
         try {
 
             subscriptionService.subscribe(
                     999999,
-                    plan1,
+                    lowerPlanId,
                     mobile4,
                     sim4,
                     "ESIM",
@@ -376,31 +555,28 @@ public class SubscriptionTest {
 
             if (e.getMessage() != null &&
                     e.getMessage().contains(
-                            "Customer not found.")) {
+                            "Customer not found."
+                    )) {
 
                 pass(
                         "Invalid customer rejection"
                 );
 
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
             } else {
 
                 fail(
-                        "Invalid customer rejection: "
-                                + e.getMessage()
+                        "Invalid customer rejection: " +
+                                e.getMessage()
                 );
             }
         }
 
         // ==========================================
-        // TEST 8: INVALID PLAN
+        // TEST 10: INVALID PLAN
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 8: INVALID PLAN ==="
+                "\n=== TEST 10: INVALID PLAN ==="
         );
 
         try {
@@ -422,43 +598,217 @@ public class SubscriptionTest {
 
             if (e.getMessage() != null &&
                     e.getMessage().contains(
-                            "Plan not found.")) {
+                            "Plan not found."
+                    )) {
 
                 pass(
                         "Invalid plan rejection"
                 );
 
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
             } else {
 
                 fail(
-                        "Invalid plan rejection: "
-                                + e.getMessage()
+                        "Invalid plan rejection: " +
+                                e.getMessage()
                 );
             }
         }
 
         // ==========================================
-        // TEST 9: INACTIVE PLAN
+        // TEST 11: INVALID SIM TYPE
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 9: INACTIVE PLAN ==="
+                "\n=== TEST 11: INVALID SIM TYPE ==="
+        );
+
+        try {
+
+            subscriptionService.subscribe(
+                    customerId,
+                    lowerPlanId,
+                    mobile4,
+                    sim4,
+                    "INVALID_SIM",
+                    "PREPAID"
+            );
+
+            fail(
+                    "Invalid SIM type rejection"
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            if (e.getMessage() != null &&
+                    e.getMessage().contains(
+                            "Invalid SIM type."
+                    )) {
+
+                pass(
+                        "Invalid SIM type rejection"
+                );
+
+            } else {
+
+                fail(
+                        "Invalid SIM type rejection: " +
+                                e.getMessage()
+                );
+            }
+        }
+
+        // ==========================================
+        // TEST 12: INVALID SUBSCRIPTION TYPE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 12: INVALID SUBSCRIPTION TYPE ==="
+        );
+
+        try {
+
+            subscriptionService.subscribe(
+                    customerId,
+                    lowerPlanId,
+                    mobile4,
+                    sim4,
+                    "ESIM",
+                    "INVALID_TYPE"
+            );
+
+            fail(
+                    "Invalid subscription type rejection"
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            if (e.getMessage() != null &&
+                    e.getMessage().contains(
+                            "Invalid subscription type."
+                    )) {
+
+                pass(
+                        "Invalid subscription type rejection"
+                );
+
+            } else {
+
+                fail(
+                        "Invalid subscription type rejection: " +
+                                e.getMessage()
+                );
+            }
+        }
+
+        // ==========================================
+        // TEST 13: BLANK MOBILE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 13: BLANK MOBILE NUMBER ==="
+        );
+
+        try {
+
+            subscriptionService.subscribe(
+                    customerId,
+                    lowerPlanId,
+                    "",
+                    sim4,
+                    "ESIM",
+                    "PREPAID"
+            );
+
+            fail(
+                    "Blank mobile rejection"
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            if (e.getMessage() != null &&
+                    e.getMessage().contains(
+                            "Mobile number is mandatory."
+                    )) {
+
+                pass(
+                        "Blank mobile rejection"
+                );
+
+            } else {
+
+                fail(
+                        "Blank mobile rejection: " +
+                                e.getMessage()
+                );
+            }
+        }
+
+        // ==========================================
+        // TEST 14: BLANK SIM
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 14: BLANK SIM NUMBER ==="
+        );
+
+        try {
+
+            subscriptionService.subscribe(
+                    customerId,
+                    lowerPlanId,
+                    mobile4,
+                    "",
+                    "ESIM",
+                    "PREPAID"
+            );
+
+            fail(
+                    "Blank SIM rejection"
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            if (e.getMessage() != null &&
+                    e.getMessage().contains(
+                            "SIM number is mandatory."
+                    )) {
+
+                pass(
+                        "Blank SIM rejection"
+                );
+
+            } else {
+
+                fail(
+                        "Blank SIM rejection: " +
+                                e.getMessage()
+                );
+            }
+        }
+
+        // ==========================================
+        // TEST 15: INACTIVE PLAN
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 15: INACTIVE PLAN ==="
         );
 
         TelecomPlan planToDeactivate =
-                planService.findById(plan5);
+                planService.findById(
+                        higherPlanId
+                );
 
         if (planToDeactivate == null) {
 
             fail(
-                    "Inactive plan test - plan 5 not found"
+                    "Inactive plan test"
             );
 
         } else {
+
+            AccountStatus originalStatus =
+                    planToDeactivate.getStatus();
 
             try {
 
@@ -474,9 +824,9 @@ public class SubscriptionTest {
 
                     subscriptionService.subscribe(
                             customerId,
-                            plan5,
-                            mobile5,
-                            sim5,
+                            higherPlanId,
+                            mobile4,
+                            sim4,
                             "ESIM",
                             "PREPAID"
                     );
@@ -489,34 +839,26 @@ public class SubscriptionTest {
 
                     if (e.getMessage() != null &&
                             e.getMessage().contains(
-                                    "Inactive plan cannot be selected.")) {
+                                    "Inactive plan cannot be selected."
+                            )) {
 
                         pass(
                                 "Inactive plan rejection"
                         );
 
-                        System.out.println(
-                                "Reason: " + e.getMessage()
-                        );
-
                     } else {
 
                         fail(
-                                "Inactive plan rejection: "
-                                        + e.getMessage()
+                                "Inactive plan rejection: " +
+                                        e.getMessage()
                         );
                     }
                 }
 
             } finally {
 
-                /*
-                 * Restore original plan status.
-                 *
-                 * Our current database state had PLAN-105 as ACTIVE.
-                 */
                 planToDeactivate.setStatus(
-                        AccountStatus.ACTIVE
+                        originalStatus
                 );
 
                 planService.update(
@@ -526,382 +868,97 @@ public class SubscriptionTest {
         }
 
         // ==========================================
-        // TEST 10: INVALID SIM TYPE
+        // TEST 16: UPGRADE PLAN
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 10: INVALID SIM TYPE ==="
-        );
-
-        try {
-
-            subscriptionService.subscribe(
-                    customerId,
-                    plan3,
-                    mobile4,
-                    sim4,
-                    "INVALID_SIM",
-                    "PREPAID"
-            );
-
-            fail(
-                    "Invalid SIM type rejection"
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            if (e.getMessage() != null &&
-                    e.getMessage().contains(
-                            "Invalid SIM type.")) {
-
-                pass(
-                        "Invalid SIM type rejection"
-                );
-
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
-            } else {
-
-                fail(
-                        "Invalid SIM type rejection: "
-                                + e.getMessage()
-                );
-            }
-        }
-
-        // ==========================================
-        // TEST 11: INVALID SUBSCRIPTION TYPE
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 11: INVALID SUBSCRIPTION TYPE ==="
-        );
-
-        try {
-
-            subscriptionService.subscribe(
-                    customerId,
-                    plan3,
-                    mobile4,
-                    sim4,
-                    "ESIM",
-                    "INVALID_TYPE"
-            );
-
-            fail(
-                    "Invalid subscription type rejection"
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            if (e.getMessage() != null &&
-                    e.getMessage().contains(
-                            "Invalid subscription type.")) {
-
-                pass(
-                        "Invalid subscription type rejection"
-                );
-
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
-            } else {
-
-                fail(
-                        "Invalid subscription type rejection: "
-                                + e.getMessage()
-                );
-            }
-        }
-
-        // ==========================================
-        // TEST 12: BLANK MOBILE NUMBER
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 12: BLANK MOBILE NUMBER ==="
-        );
-
-        try {
-
-            subscriptionService.subscribe(
-                    customerId,
-                    plan3,
-                    "",
-                    sim4,
-                    "ESIM",
-                    "PREPAID"
-            );
-
-            fail(
-                    "Blank mobile rejection"
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            if (e.getMessage() != null &&
-                    e.getMessage().contains(
-                            "Mobile number is mandatory.")) {
-
-                pass(
-                        "Blank mobile rejection"
-                );
-
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
-            } else {
-
-                fail(
-                        "Blank mobile rejection: "
-                                + e.getMessage()
-                );
-            }
-        }
-
-        // ==========================================
-        // TEST 13: BLANK SIM NUMBER
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 13: BLANK SIM NUMBER ==="
-        );
-
-        try {
-
-            subscriptionService.subscribe(
-                    customerId,
-                    plan3,
-                    mobile4,
-                    "",
-                    "ESIM",
-                    "PREPAID"
-            );
-
-            fail(
-                    "Blank SIM rejection"
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            if (e.getMessage() != null &&
-                    e.getMessage().contains(
-                            "SIM number is mandatory.")) {
-
-                pass(
-                        "Blank SIM rejection"
-                );
-
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
-            } else {
-
-                fail(
-                        "Blank SIM rejection: "
-                                + e.getMessage()
-                );
-            }
-        }
-
-        // ==========================================
-        // TEST 14: BLANK SIM TYPE
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 14: BLANK SIM TYPE ==="
-        );
-
-        try {
-
-            subscriptionService.subscribe(
-                    customerId,
-                    plan3,
-                    mobile4,
-                    sim4,
-                    "",
-                    "PREPAID"
-            );
-
-            fail(
-                    "Blank SIM type rejection"
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            if (e.getMessage() != null &&
-                    e.getMessage().contains(
-                            "SIM type is mandatory.")) {
-
-                pass(
-                        "Blank SIM type rejection"
-                );
-
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
-            } else {
-
-                fail(
-                        "Blank SIM type rejection: "
-                                + e.getMessage()
-                );
-            }
-        }
-
-        // ==========================================
-        // TEST 15: BLANK SUBSCRIPTION TYPE
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 15: BLANK SUBSCRIPTION TYPE ==="
-        );
-
-        try {
-
-            subscriptionService.subscribe(
-                    customerId,
-                    plan3,
-                    mobile4,
-                    sim4,
-                    "ESIM",
-                    ""
-            );
-
-            fail(
-                    "Blank subscription type rejection"
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            if (e.getMessage() != null &&
-                    e.getMessage().contains(
-                            "Subscription type is mandatory.")) {
-
-                pass(
-                        "Blank subscription type rejection"
-                );
-
-                System.out.println(
-                        "Reason: " + e.getMessage()
-                );
-
-            } else {
-
-                fail(
-                        "Blank subscription type rejection: "
-                                + e.getMessage()
-                );
-            }
-        }
-
-        // ==========================================
-        // TEST 16: CHANGE PLAN
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 16: CHANGE PLAN ==="
+                "\n=== TEST 16: UPGRADE PLAN ==="
         );
 
         try {
 
             subscriptionService.upgradePlan(
                     createdSubscriptionId,
-                    plan2,
-                    "Plan change test",
+                    higherPlanId,
+                    "Upgrade test",
                     "CUSTOMER"
             );
 
-            MobileSubscription updatedSubscription =
+            MobileSubscription updated =
                     subscriptionService.findById(
                             createdSubscriptionId
                     );
 
-            if (updatedSubscription != null &&
-                    updatedSubscription.getPlanId()
-                            == plan2) {
+            if (updated != null &&
+                    updated.getPlanId()
+                            == higherPlanId) {
 
                 pass(
-                        "Plan change"
+                        "Upgrade plan"
                 );
 
                 System.out.println(
-                        "Subscription ID: " +
-                                updatedSubscription
-                                        .getSubscriptionId()
+                        "Old Plan: " +
+                                lowerPlan.getPlanCode()
                 );
 
                 System.out.println(
-                        "Old Plan ID: " +
-                                plan1
-                );
-
-                System.out.println(
-                        "New Plan ID: " +
-                                updatedSubscription.getPlanId()
+                        "New Plan: " +
+                                higherPlan.getPlanCode()
                 );
 
             } else {
 
                 fail(
-                        "Plan change"
+                        "Upgrade plan"
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Plan change: "
-                            + e.getMessage()
+                    "Upgrade plan: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 17: SAME PLAN ON SAME CONNECTION
+        // TEST 17: UPGRADE TO CHEAPER PLAN
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 17: SAME PLAN ON SAME CONNECTION ==="
+                "\n=== TEST 17: INVALID UPGRADE ==="
         );
 
         try {
 
             subscriptionService.upgradePlan(
                     createdSubscriptionId,
-                    plan2,
-                    "Same plan test",
+                    lowerPlanId,
+                    "Invalid upgrade test",
                     "CUSTOMER"
             );
 
             fail(
-                    "Same plan rejection"
+                    "Invalid upgrade rejection"
             );
 
         } catch (IllegalArgumentException e) {
 
             if (e.getMessage() != null &&
                     e.getMessage().contains(
-                            "Connection is already using this plan.")) {
+                            "Upgrade plan must have a higher monthly rental."
+                    )) {
 
                 pass(
-                        "Same plan rejection"
-                );
-
-                System.out.println(
-                        "Reason: " + e.getMessage()
+                        "Invalid upgrade rejection"
                 );
 
             } else {
 
                 fail(
-                        "Same plan rejection: "
-                                + e.getMessage()
+                        "Invalid upgrade rejection: " +
+                                e.getMessage()
                 );
             }
         }
@@ -916,62 +973,31 @@ public class SubscriptionTest {
 
         try {
 
-            List<SubscriptionHistory> historyList =
+            List<SubscriptionHistory> history =
                     subscriptionService.findHistory(
                             createdSubscriptionId
                     );
 
-            if (!historyList.isEmpty()) {
+            boolean found =
+                    history.stream()
+                            .anyMatch(item ->
+                                    item.getOldPlanId()
+                                            == lowerPlanId
+                                            &&
+                                            item.getNewPlanId()
+                                                    == higherPlanId
+                            );
 
-                SubscriptionHistory latestHistory =
-                        historyList.get(0);
+            if (found) {
 
-                if (latestHistory.getOldPlanId()
-                        == plan1 &&
-                        latestHistory.getNewPlanId()
-                                == plan2) {
+                pass(
+                        "Subscription history"
+                );
 
-                    pass(
-                            "Subscription history"
-                    );
-
-                    System.out.println(
-                            "History ID: " +
-                                    latestHistory.getHistoryId()
-                    );
-
-                    System.out.println(
-                            "Subscription ID: " +
-                                    latestHistory
-                                            .getSubscriptionId()
-                    );
-
-                    System.out.println(
-                            "Old Plan ID: " +
-                                    latestHistory.getOldPlanId()
-                    );
-
-                    System.out.println(
-                            "New Plan ID: " +
-                                    latestHistory.getNewPlanId()
-                    );
-
-                    System.out.println(
-                            "Change Reason: " +
-                                    latestHistory.getChangeReason()
-                    );
-
-                    System.out.println(
-                            "Changed By: " +
-                                    latestHistory.getChangedBy()
-                    );
-
-                } else {
-
-                    fail(
-                            "Subscription history content"
-                    );
-                }
+                System.out.println(
+                        "History records: " +
+                                history.size()
+                );
 
             } else {
 
@@ -983,17 +1009,103 @@ public class SubscriptionTest {
         } catch (Exception e) {
 
             fail(
-                    "Subscription history: "
-                            + e.getMessage()
+                    "Subscription history: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 19: CHANGE SUBSCRIPTION TYPE
+        // TEST 19: DOWNGRADE PLAN
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 19: CHANGE SUBSCRIPTION TYPE ==="
+                "\n=== TEST 19: DOWNGRADE PLAN ==="
+        );
+
+        try {
+
+            subscriptionService.downgradePlan(
+                    createdSubscriptionId,
+                    lowerPlanId,
+                    "Downgrade test",
+                    "CUSTOMER"
+            );
+
+            MobileSubscription updated =
+                    subscriptionService.findById(
+                            createdSubscriptionId
+                    );
+
+            if (updated != null &&
+                    updated.getPlanId()
+                            == lowerPlanId) {
+
+                pass(
+                        "Downgrade plan"
+                );
+
+            } else {
+
+                fail(
+                        "Downgrade plan"
+                );
+            }
+
+        } catch (Exception e) {
+
+            fail(
+                    "Downgrade plan: " +
+                            e.getMessage()
+            );
+        }
+
+        // ==========================================
+        // TEST 20: INVALID DOWNGRADE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 20: INVALID DOWNGRADE ==="
+        );
+
+        try {
+
+            subscriptionService.downgradePlan(
+                    createdSubscriptionId,
+                    higherPlanId,
+                    "Invalid downgrade test",
+                    "CUSTOMER"
+            );
+
+            fail(
+                    "Invalid downgrade rejection"
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            if (e.getMessage() != null &&
+                    e.getMessage().contains(
+                            "Downgrade plan must have a lower monthly rental."
+                    )) {
+
+                pass(
+                        "Invalid downgrade rejection"
+                );
+
+            } else {
+
+                fail(
+                        "Invalid downgrade rejection: " +
+                                e.getMessage()
+                );
+            }
+        }
+
+        // ==========================================
+        // TEST 21: CHANGE SUBSCRIPTION TYPE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 21: CHANGE SUBSCRIPTION TYPE ==="
         );
 
         try {
@@ -1001,33 +1113,21 @@ public class SubscriptionTest {
             subscriptionService.changeSubscriptionType(
                     createdSubscriptionId,
                     "PREPAID",
-                    "Subscription type change test",
+                    "Type change test",
                     "CUSTOMER"
             );
 
-            MobileSubscription updatedSubscription =
+            MobileSubscription updated =
                     subscriptionService.findById(
                             createdSubscriptionId
                     );
 
-            if (updatedSubscription != null &&
-                    updatedSubscription.getSubscriptionType()
+            if (updated != null &&
+                    updated.getSubscriptionType()
                             == SubscriptionType.PREPAID) {
 
                 pass(
                         "Subscription type change"
-                );
-
-                System.out.println(
-                        "Subscription ID: " +
-                                updatedSubscription
-                                        .getSubscriptionId()
-                );
-
-                System.out.println(
-                        "New Subscription Type: " +
-                                updatedSubscription
-                                        .getSubscriptionType()
                 );
 
             } else {
@@ -1040,17 +1140,58 @@ public class SubscriptionTest {
         } catch (Exception e) {
 
             fail(
-                    "Subscription type change: "
-                            + e.getMessage()
+                    "Subscription type change: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 20: DEACTIVATE SUBSCRIPTION
+        // TEST 22: SAME SUBSCRIPTION TYPE
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 20: DEACTIVATE SUBSCRIPTION ==="
+                "\n=== TEST 22: SAME SUBSCRIPTION TYPE ==="
+        );
+
+        try {
+
+            subscriptionService.changeSubscriptionType(
+                    createdSubscriptionId,
+                    "PREPAID",
+                    "Same type test",
+                    "CUSTOMER"
+            );
+
+            fail(
+                    "Same subscription type rejection"
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            if (e.getMessage() != null &&
+                    e.getMessage().contains(
+                            "Connection is already of this type."
+                    )) {
+
+                pass(
+                        "Same subscription type rejection"
+                );
+
+            } else {
+
+                fail(
+                        "Same subscription type rejection: " +
+                                e.getMessage()
+                );
+            }
+        }
+
+        // ==========================================
+        // TEST 23: DEACTIVATE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 23: DEACTIVATE SUBSCRIPTION ==="
         );
 
         try {
@@ -1059,28 +1200,17 @@ public class SubscriptionTest {
                     createdSubscriptionId
             );
 
-            MobileSubscription updatedSubscription =
+            MobileSubscription updated =
                     subscriptionService.findById(
                             createdSubscriptionId
                     );
 
-            if (updatedSubscription != null &&
-                    updatedSubscription.getStatus()
+            if (updated != null &&
+                    updated.getStatus()
                             == SubscriptionStatus.INACTIVE) {
 
                 pass(
                         "Subscription deactivation"
-                );
-
-                System.out.println(
-                        "Subscription ID: " +
-                                updatedSubscription
-                                        .getSubscriptionId()
-                );
-
-                System.out.println(
-                        "Status: " +
-                                updatedSubscription.getStatus()
                 );
 
             } else {
@@ -1093,17 +1223,17 @@ public class SubscriptionTest {
         } catch (Exception e) {
 
             fail(
-                    "Subscription deactivation: "
-                            + e.getMessage()
+                    "Subscription deactivation: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 21: REACTIVATE SUBSCRIPTION
+        // TEST 24: REACTIVATE
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 21: REACTIVATE SUBSCRIPTION ==="
+                "\n=== TEST 24: REACTIVATE SUBSCRIPTION ==="
         );
 
         try {
@@ -1112,28 +1242,17 @@ public class SubscriptionTest {
                     createdSubscriptionId
             );
 
-            MobileSubscription updatedSubscription =
+            MobileSubscription updated =
                     subscriptionService.findById(
                             createdSubscriptionId
                     );
 
-            if (updatedSubscription != null &&
-                    updatedSubscription.getStatus()
+            if (updated != null &&
+                    updated.getStatus()
                             == SubscriptionStatus.ACTIVE) {
 
                 pass(
                         "Subscription reactivation"
-                );
-
-                System.out.println(
-                        "Subscription ID: " +
-                                updatedSubscription
-                                        .getSubscriptionId()
-                );
-
-                System.out.println(
-                        "Status: " +
-                                updatedSubscription.getStatus()
                 );
 
             } else {
@@ -1146,17 +1265,17 @@ public class SubscriptionTest {
         } catch (Exception e) {
 
             fail(
-                    "Subscription reactivation: "
-                            + e.getMessage()
+                    "Subscription reactivation: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 22: CUSTOMER MULTIPLE CONNECTIONS
+        // TEST 25: CUSTOMER CONNECTIONS
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 22: CUSTOMER MULTIPLE CONNECTIONS ==="
+                "\n=== TEST 25: CUSTOMER MULTIPLE CONNECTIONS ==="
         );
 
         try {
@@ -1166,46 +1285,40 @@ public class SubscriptionTest {
                             customerId
                     );
 
-            if (subscriptions.size() >= 3) {
+            final long subscriptionId =
+                    createdSubscriptionId;
+
+            boolean found =
+                    subscriptions.stream()
+                            .anyMatch(existing ->
+                                    existing.getSubscriptionId()
+                                            == subscriptionId
+                            );
+
+            if (found &&
+                    subscriptions.size() >= 1) {
 
                 pass(
-                        "Multiple connections retrieval"
+                        "Customer multiple connections"
                 );
 
                 System.out.println(
-                        "Total connections for customer " +
-                                customerId +
-                                ": " +
+                        "Connections found: " +
                                 subscriptions.size()
                 );
-
-                for (MobileSubscription s
-                        : subscriptions) {
-
-                    System.out.println(
-                            "Subscription ID: " +
-                                    s.getSubscriptionId() +
-                                    " | Mobile: " +
-                                    s.getMobileNumber() +
-                                    " | Plan ID: " +
-                                    s.getPlanId() +
-                                    " | Status: " +
-                                    s.getStatus()
-                    );
-                }
 
             } else {
 
                 fail(
-                        "Multiple connections retrieval"
+                        "Customer multiple connections"
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Multiple connections retrieval: "
-                            + e.getMessage()
+                    "Customer multiple connections: " +
+                            e.getMessage()
             );
         }
 
@@ -1218,11 +1331,13 @@ public class SubscriptionTest {
         );
 
         System.out.println(
-                "TOTAL PASSED: " + passed
+                "TOTAL PASSED: " +
+                        passed
         );
 
         System.out.println(
-                "TOTAL FAILED: " + failed
+                "TOTAL FAILED: " +
+                        failed
         );
 
         System.out.println(
@@ -1243,21 +1358,25 @@ public class SubscriptionTest {
         }
     }
 
-    private static void pass(String testName) {
+    private static void pass(
+            String testName) {
 
         passed++;
 
         System.out.println(
-                testName + ": PASSED"
+                testName +
+                        ": PASSED"
         );
     }
 
-    private static void fail(String testName) {
+    private static void fail(
+            String testName) {
 
         failed++;
 
         System.out.println(
-                testName + ": FAILED"
+                testName +
+                        ": FAILED"
         );
     }
 

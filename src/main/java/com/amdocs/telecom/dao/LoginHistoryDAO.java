@@ -9,4 +9,6 @@ public interface LoginHistoryDAO {
     void save(LoginHistory loginHistory);
 
     List<LoginHistory> findByCustomerId(long customerId);
+
+    void deleteByCustomerId(long customerId);
 }

@@ -17,8 +17,12 @@ import com.amdocs.telecom.service.OTPService;
 import com.amdocs.telecom.validation.CustomerValidator;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
-public class AuthenticationServiceImpl implements AuthenticationService {
+public class AuthenticationServiceImpl
+        implements AuthenticationService {
 
     private final CustomerDAO customerDAO;
     private final LoginHistoryDAO loginHistoryDAO;
@@ -26,13 +30,34 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final CaptchaGenerator captchaGenerator;
     private final OTPService otpService;
 
+    /*
+     * Stores customers whose OTP has been successfully
+     * verified for the current password-reset flow.
+     *
+     * synchronizedSet makes access safe if multiple
+     * threads use the authentication service.
+     */
+    private final Set<Long> verifiedOTPCustomers =
+            Collections.synchronizedSet(
+                    new HashSet<Long>()
+            );
+
     public AuthenticationServiceImpl() {
 
-        this.customerDAO = new CustomerDAOImpl();
-        this.loginHistoryDAO = new LoginHistoryDAOImpl();
-        this.passwordOTPDAO = new PasswordOTPDAOImpl();
-        this.captchaGenerator = new CaptchaGenerator();
-        this.otpService = new OTPServiceImpl();
+        this.customerDAO =
+                new CustomerDAOImpl();
+
+        this.loginHistoryDAO =
+                new LoginHistoryDAOImpl();
+
+        this.passwordOTPDAO =
+                new PasswordOTPDAOImpl();
+
+        this.captchaGenerator =
+                new CaptchaGenerator();
+
+        this.otpService =
+                new OTPServiceImpl();
     }
 
     @Override
@@ -42,16 +67,30 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             String captcha,
             int captchaAnswer) {
 
-        // 1. Validate CAPTCHA
-        if (!captchaGenerator.validateCaptcha(captcha, captchaAnswer)) {
+        // ==========================================
+        // 1. VALIDATE CAPTCHA
+        // ==========================================
 
-            System.out.println("Invalid CAPTCHA.");
+        if (!captchaGenerator.validateCaptcha(
+                captcha,
+                captchaAnswer
+        )) {
+
+            System.out.println(
+                    "Invalid CAPTCHA."
+            );
+
             return null;
         }
 
-        // 2. Find customer
+        // ==========================================
+        // 2. FIND CUSTOMER
+        // ==========================================
+
         Customer customer =
-                customerDAO.findByUsername(username);
+                customerDAO.findByUsername(
+                        username
+                );
 
         if (customer == null) {
 
@@ -62,8 +101,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return null;
         }
 
-        // 3. Check account status
-        if (customer.getAccountStatus() != AccountStatus.ACTIVE) {
+        // ==========================================
+        // 3. CHECK ACCOUNT STATUS
+        // ==========================================
+
+        if (customer.getAccountStatus()
+                != AccountStatus.ACTIVE) {
 
             System.out.println(
                     "Account is not active."
@@ -72,10 +115,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return null;
         }
 
-        // 4. Check temporary account lock
+        // ==========================================
+        // 4. CHECK TEMPORARY LOCK
+        // ==========================================
+
         if (customer.getLockedUntil() != null &&
                 customer.getLockedUntil().isAfter(
-                        LocalDateTime.now())) {
+                        LocalDateTime.now()
+                )) {
 
             System.out.println(
                     "Account is temporarily locked."
@@ -89,10 +136,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return null;
         }
 
-        // 5. Verify password
+        // ==========================================
+        // 5. VERIFY PASSWORD
+        // ==========================================
+
         if (!PasswordUtil.verifyPassword(
                 password,
-                customer.getPasswordHash())) {
+                customer.getPasswordHash()
+        )) {
 
             int failedAttempts =
                     customer.getFailedLoginAttempts() + 1;
@@ -112,7 +163,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     )
             );
 
-            // 6. Lock after 3 failed attempts
+            // ==========================================
+            // 6. LOCK AFTER 3 FAILED ATTEMPTS
+            // ==========================================
+
             if (failedAttempts >= 3) {
 
                 LocalDateTime lockedUntil =
@@ -148,7 +202,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return null;
         }
 
-        // 7. Successful login
+        // ==========================================
+        // 7. SUCCESSFUL LOGIN
+        // ==========================================
+
         customerDAO.updateFailedLoginAttempts(
                 customer.getCustomerId(),
                 0
@@ -167,7 +224,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 loginTime
         );
 
-        // 8. Record successful login
+        // ==========================================
+        // 8. RECORD SUCCESSFUL LOGIN
+        // ==========================================
+
         loginHistoryDAO.save(
                 new LoginHistory(
                         0,
@@ -196,7 +256,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             long customerId) {
 
         Customer customer =
-                customerDAO.findById(customerId);
+                customerDAO.findById(
+                        customerId
+                );
 
         if (customer == null) {
 
@@ -207,7 +269,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return null;
         }
 
-        return otpService.generateOTP(customerId);
+        /*
+         * Generating a new OTP starts a new reset flow.
+         * Remove any previous in-memory verification state.
+         */
+        verifiedOTPCustomers.remove(
+                customerId
+        );
+
+        return otpService.generateOTP(
+                customerId
+        );
     }
 
     @Override
@@ -215,10 +287,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             long customerId,
             String otpCode) {
 
-        return otpService.verifyOTP(
-                customerId,
-                otpCode
-        );
+        boolean verified =
+                otpService.verifyOTP(
+                        customerId,
+                        otpCode
+                );
+
+        if (verified) {
+
+            verifiedOTPCustomers.add(
+                    customerId
+            );
+        }
+
+        return verified;
     }
 
     @Override
@@ -227,7 +309,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             String newPassword) {
 
         Customer customer =
-                customerDAO.findById(customerId);
+                customerDAO.findById(
+                        customerId
+                );
 
         if (customer == null) {
 
@@ -238,21 +322,52 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             return false;
         }
 
-        // Validate new password
+        // ==========================================
+        // OTP VERIFICATION REQUIRED
+        // ==========================================
+
+        if (!verifiedOTPCustomers.contains(
+                customerId
+        )) {
+
+            System.out.println(
+                    "OTP verification required."
+            );
+
+            return false;
+        }
+
+        // ==========================================
+        // VALIDATE NEW PASSWORD
+        // ==========================================
+
         CustomerValidator.validatePassword(
                 newPassword
         );
 
-        // Hash new password
+        // ==========================================
+        // HASH NEW PASSWORD
+        // ==========================================
+
         String passwordHash =
                 PasswordUtil.hashPassword(
                         newPassword
                 );
 
-        // Update password in database
+        // ==========================================
+        // UPDATE PASSWORD
+        // ==========================================
+
         customerDAO.updatePassword(
                 customerId,
                 passwordHash
+        );
+
+        /*
+         * OTP authorization is one-time use.
+         */
+        verifiedOTPCustomers.remove(
+                customerId
         );
 
         System.out.println(
@@ -263,10 +378,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void logout(long customerId) {
+    public void logout(
+            long customerId) {
 
         Customer customer =
-                customerDAO.findById(customerId);
+                customerDAO.findById(
+                        customerId
+                );
 
         if (customer == null) {
 

@@ -1,8 +1,11 @@
 package com.amdocs.telecom.main;
 
+import com.amdocs.telecom.model.MobileSubscription;
 import com.amdocs.telecom.model.UsageRecord;
 import com.amdocs.telecom.model.enums.UsageType;
+import com.amdocs.telecom.service.SubscriptionService;
 import com.amdocs.telecom.service.UsageService;
+import com.amdocs.telecom.service.impl.SubscriptionServiceImpl;
 import com.amdocs.telecom.service.impl.UsageServiceImpl;
 
 import java.math.BigDecimal;
@@ -21,16 +24,43 @@ public class UsageTest {
         UsageService usageService =
                 new UsageServiceImpl();
 
+        SubscriptionService subscriptionService =
+                new SubscriptionServiceImpl();
+
         System.out.println(
                 "=== USAGE TEST SUITE ==="
         );
 
-        long subscriptionId = 1;
+        // ==========================================
+        // FIND AN EXISTING SUBSCRIPTION DYNAMICALLY
+        // ==========================================
 
-        /*
-         * Capture database state BEFORE this test run.
-         * This makes the test independent of existing records.
-         */
+        List<MobileSubscription> subscriptions =
+                subscriptionService.findAll();
+
+        if (subscriptions == null ||
+                subscriptions.isEmpty()) {
+
+            System.out.println(
+                    "No subscriptions available for usage testing."
+            );
+
+            return;
+        }
+
+        final long subscriptionId =
+                subscriptions.get(0)
+                        .getSubscriptionId();
+
+        System.out.println(
+                "Using Subscription ID: " +
+                        subscriptionId
+        );
+
+        // ==========================================
+        // CAPTURE DATABASE STATE BEFORE TEST
+        // ==========================================
+
         List<UsageRecord> recordsBefore =
                 usageService.findAll();
 
@@ -59,37 +89,9 @@ public class UsageTest {
                         currentMonth
                 );
 
-        BigDecimal dataBeforeForMonth =
-                getUsageValue(
-                        monthlyBefore,
-                        UsageType.DATA
-                );
-
-        BigDecimal voiceBeforeForMonth =
-                getUsageValue(
-                        monthlyBefore,
-                        UsageType.VOICE
-                );
-
-        BigDecimal smsBeforeForMonth =
-                getUsageValue(
-                        monthlyBefore,
-                        UsageType.SMS
-                );
-
-        BigDecimal roamingBeforeForMonth =
-                getUsageValue(
-                        monthlyBefore,
-                        UsageType.ROAMING
-                );
-
         // ==========================================
-        // TEST 1: CREATE DATA USAGE
+        // TEST DATA
         // ==========================================
-
-        System.out.println(
-                "\n=== TEST 1: CREATE DATA USAGE ==="
-        );
 
         UsageRecord dataRecord =
                 new UsageRecord(
@@ -102,43 +104,6 @@ public class UsageTest {
                         new BigDecimal("50.00")
                 );
 
-        try {
-
-            usageService.save(dataRecord);
-
-            if (dataRecord.getUsageId() > 0) {
-
-                pass(
-                        "Data usage creation"
-                );
-
-                printUsageRecord(
-                        dataRecord
-                );
-
-            } else {
-
-                fail(
-                        "Data usage creation"
-                );
-            }
-
-        } catch (Exception e) {
-
-            fail(
-                    "Data usage creation: "
-                            + e.getMessage()
-            );
-        }
-
-        // ==========================================
-        // TEST 2: CREATE VOICE USAGE
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 2: CREATE VOICE USAGE ==="
-        );
-
         UsageRecord voiceRecord =
                 new UsageRecord(
                         0,
@@ -149,43 +114,6 @@ public class UsageTest {
                         "MINUTES",
                         new BigDecimal("30.00")
                 );
-
-        try {
-
-            usageService.save(voiceRecord);
-
-            if (voiceRecord.getUsageId() > 0) {
-
-                pass(
-                        "Voice usage creation"
-                );
-
-                printUsageRecord(
-                        voiceRecord
-                );
-
-            } else {
-
-                fail(
-                        "Voice usage creation"
-                );
-            }
-
-        } catch (Exception e) {
-
-            fail(
-                    "Voice usage creation: "
-                            + e.getMessage()
-            );
-        }
-
-        // ==========================================
-        // TEST 3: CREATE SMS USAGE
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 3: CREATE SMS USAGE ==="
-        );
 
         UsageRecord smsRecord =
                 new UsageRecord(
@@ -198,43 +126,6 @@ public class UsageTest {
                         new BigDecimal("10.00")
                 );
 
-        try {
-
-            usageService.save(smsRecord);
-
-            if (smsRecord.getUsageId() > 0) {
-
-                pass(
-                        "SMS usage creation"
-                );
-
-                printUsageRecord(
-                        smsRecord
-                );
-
-            } else {
-
-                fail(
-                        "SMS usage creation"
-                );
-            }
-
-        } catch (Exception e) {
-
-            fail(
-                    "SMS usage creation: "
-                            + e.getMessage()
-            );
-        }
-
-        // ==========================================
-        // TEST 4: CREATE ROAMING USAGE
-        // ==========================================
-
-        System.out.println(
-                "\n=== TEST 4: CREATE ROAMING USAGE ==="
-        );
-
         UsageRecord roamingRecord =
                 new UsageRecord(
                         0,
@@ -246,6 +137,113 @@ public class UsageTest {
                         new BigDecimal("75.00")
                 );
 
+        // ==========================================
+        // TEST 1: CREATE DATA
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 1: CREATE DATA USAGE ==="
+        );
+
+        try {
+
+            usageService.save(dataRecord);
+
+            if (dataRecord.getUsageId() > 0) {
+
+                pass(
+                        "Data usage creation"
+                );
+
+            } else {
+
+                fail(
+                        "Data usage creation"
+                );
+            }
+
+        } catch (Exception e) {
+
+            fail(
+                    "Data usage creation: " +
+                            e.getMessage()
+            );
+        }
+
+        // ==========================================
+        // TEST 2: CREATE VOICE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 2: CREATE VOICE USAGE ==="
+        );
+
+        try {
+
+            usageService.save(voiceRecord);
+
+            if (voiceRecord.getUsageId() > 0) {
+
+                pass(
+                        "Voice usage creation"
+                );
+
+            } else {
+
+                fail(
+                        "Voice usage creation"
+                );
+            }
+
+        } catch (Exception e) {
+
+            fail(
+                    "Voice usage creation: " +
+                            e.getMessage()
+            );
+        }
+
+        // ==========================================
+        // TEST 3: CREATE SMS
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 3: CREATE SMS USAGE ==="
+        );
+
+        try {
+
+            usageService.save(smsRecord);
+
+            if (smsRecord.getUsageId() > 0) {
+
+                pass(
+                        "SMS usage creation"
+                );
+
+            } else {
+
+                fail(
+                        "SMS usage creation"
+                );
+            }
+
+        } catch (Exception e) {
+
+            fail(
+                    "SMS usage creation: " +
+                            e.getMessage()
+            );
+        }
+
+        // ==========================================
+        // TEST 4: CREATE ROAMING
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 4: CREATE ROAMING USAGE ==="
+        );
+
         try {
 
             usageService.save(roamingRecord);
@@ -254,10 +252,6 @@ public class UsageTest {
 
                 pass(
                         "Roaming usage creation"
-                );
-
-                printUsageRecord(
-                        roamingRecord
                 );
 
             } else {
@@ -270,8 +264,8 @@ public class UsageTest {
         } catch (Exception e) {
 
             fail(
-                    "Roaming usage creation: "
-                            + e.getMessage()
+                    "Roaming usage creation: " +
+                            e.getMessage()
             );
         }
 
@@ -285,21 +279,17 @@ public class UsageTest {
 
         try {
 
-            UsageRecord foundRecord =
+            UsageRecord found =
                     usageService.findById(
                             dataRecord.getUsageId()
                     );
 
-            if (foundRecord != null &&
-                    foundRecord.getUsageId()
+            if (found != null &&
+                    found.getUsageId()
                             == dataRecord.getUsageId()) {
 
                 pass(
                         "Find usage by ID"
-                );
-
-                printUsageRecord(
-                        foundRecord
                 );
 
             } else {
@@ -312,8 +302,8 @@ public class UsageTest {
         } catch (Exception e) {
 
             fail(
-                    "Find usage by ID: "
-                            + e.getMessage()
+                    "Find usage by ID: " +
+                            e.getMessage()
             );
         }
 
@@ -327,43 +317,46 @@ public class UsageTest {
 
         try {
 
-            List<UsageRecord> subscriptionUsage =
+            List<UsageRecord> usage =
                     usageService.findBySubscriptionId(
                             subscriptionId
                     );
 
-            int expectedIncrease = 4;
+            boolean dataFound =
+                    usage.stream()
+                            .anyMatch(record ->
+                                    record.getUsageId()
+                                            == dataRecord.getUsageId()
+                            );
 
-            /*
-             * We captured the initial count before
-             * creating the four records.
-             */
-            int expectedCount =
-                    recordsBefore.stream()
-                            .filter(record ->
-                                    record.getSubscriptionId()
-                                            == subscriptionId
-                            )
-                            .count() == 0
-                            ? 4
-                            : (int) recordsBefore.stream()
-                            .filter(record ->
-                                    record.getSubscriptionId()
-                                            == subscriptionId
-                            )
-                            .count()
-                            + expectedIncrease;
+            boolean voiceFound =
+                    usage.stream()
+                            .anyMatch(record ->
+                                    record.getUsageId()
+                                            == voiceRecord.getUsageId()
+                            );
 
-            if (subscriptionUsage.size()
-                    >= expectedCount) {
+            boolean smsFound =
+                    usage.stream()
+                            .anyMatch(record ->
+                                    record.getUsageId()
+                                            == smsRecord.getUsageId()
+                            );
+
+            boolean roamingFound =
+                    usage.stream()
+                            .anyMatch(record ->
+                                    record.getUsageId()
+                                            == roamingRecord.getUsageId()
+                            );
+
+            if (dataFound &&
+                    voiceFound &&
+                    smsFound &&
+                    roamingFound) {
 
                 pass(
                         "Find usage by subscription"
-                );
-
-                System.out.println(
-                        "Records found: " +
-                                subscriptionUsage.size()
                 );
 
             } else {
@@ -376,8 +369,8 @@ public class UsageTest {
         } catch (Exception e) {
 
             fail(
-                    "Find usage by subscription: "
-                            + e.getMessage()
+                    "Find usage by subscription: " +
+                            e.getMessage()
             );
         }
 
@@ -404,11 +397,6 @@ public class UsageTest {
                         "Find all usage"
                 );
 
-                System.out.println(
-                        "Total usage records: " +
-                                allUsage.size()
-                );
-
             } else {
 
                 fail(
@@ -426,13 +414,13 @@ public class UsageTest {
         } catch (Exception e) {
 
             fail(
-                    "Find all usage: "
-                            + e.getMessage()
+                    "Find all usage: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 8: TOTAL DATA USAGE
+        // TEST 8: TOTAL DATA
         // ==========================================
 
         System.out.println(
@@ -441,7 +429,7 @@ public class UsageTest {
 
         try {
 
-            BigDecimal totalData =
+            BigDecimal actual =
                     usageService.calculateTotalDataUsage();
 
             BigDecimal expected =
@@ -449,16 +437,12 @@ public class UsageTest {
                             new BigDecimal("2.500")
                     );
 
-            if (totalData.compareTo(expected)
-                    == 0) {
+            if (actual.compareTo(
+                    expected
+            ) == 0) {
 
                 pass(
                         "Total DATA calculation"
-                );
-
-                System.out.println(
-                        "Total DATA usage: " +
-                                totalData
                 );
 
             } else {
@@ -471,20 +455,20 @@ public class UsageTest {
                         "Expected: " +
                                 expected +
                                 ", Actual: " +
-                                totalData
+                                actual
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Total DATA calculation: "
-                            + e.getMessage()
+                    "Total DATA calculation: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 9: TOTAL VOICE USAGE
+        // TEST 9: TOTAL VOICE
         // ==========================================
 
         System.out.println(
@@ -493,7 +477,7 @@ public class UsageTest {
 
         try {
 
-            BigDecimal totalVoice =
+            BigDecimal actual =
                     usageService.calculateTotalVoiceUsage();
 
             BigDecimal expected =
@@ -501,16 +485,12 @@ public class UsageTest {
                             new BigDecimal("120.000")
                     );
 
-            if (totalVoice.compareTo(expected)
-                    == 0) {
+            if (actual.compareTo(
+                    expected
+            ) == 0) {
 
                 pass(
                         "Total VOICE calculation"
-                );
-
-                System.out.println(
-                        "Total VOICE usage: " +
-                                totalVoice
                 );
 
             } else {
@@ -523,20 +503,20 @@ public class UsageTest {
                         "Expected: " +
                                 expected +
                                 ", Actual: " +
-                                totalVoice
+                                actual
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Total VOICE calculation: "
-                            + e.getMessage()
+                    "Total VOICE calculation: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 10: TOTAL SMS USAGE
+        // TEST 10: TOTAL SMS
         // ==========================================
 
         System.out.println(
@@ -545,7 +525,7 @@ public class UsageTest {
 
         try {
 
-            BigDecimal totalSms =
+            BigDecimal actual =
                     usageService.calculateTotalSmsUsage();
 
             BigDecimal expected =
@@ -553,16 +533,12 @@ public class UsageTest {
                             new BigDecimal("45.000")
                     );
 
-            if (totalSms.compareTo(expected)
-                    == 0) {
+            if (actual.compareTo(
+                    expected
+            ) == 0) {
 
                 pass(
                         "Total SMS calculation"
-                );
-
-                System.out.println(
-                        "Total SMS usage: " +
-                                totalSms
                 );
 
             } else {
@@ -575,20 +551,20 @@ public class UsageTest {
                         "Expected: " +
                                 expected +
                                 ", Actual: " +
-                                totalSms
+                                actual
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Total SMS calculation: "
-                            + e.getMessage()
+                    "Total SMS calculation: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 11: MONTHLY USAGE BY TYPE
+        // TEST 11: MONTHLY USAGE
         // ==========================================
 
         System.out.println(
@@ -602,65 +578,53 @@ public class UsageTest {
                             currentMonth
                     );
 
-            BigDecimal expectedData =
-                    dataBeforeForMonth.add(
-                            new BigDecimal("2.500")
-                    );
-
-            BigDecimal expectedVoice =
-                    voiceBeforeForMonth.add(
-                            new BigDecimal("120.000")
-                    );
-
-            BigDecimal expectedSms =
-                    smsBeforeForMonth.add(
-                            new BigDecimal("45.000")
-                    );
-
-            BigDecimal expectedRoaming =
-                    roamingBeforeForMonth.add(
-                            new BigDecimal("0.750")
-                    );
-
-            BigDecimal actualData =
+            boolean valid =
                     getUsageValue(
                             monthlyUsage,
                             UsageType.DATA
-                    );
-
-            BigDecimal actualVoice =
-                    getUsageValue(
-                            monthlyUsage,
-                            UsageType.VOICE
-                    );
-
-            BigDecimal actualSms =
-                    getUsageValue(
-                            monthlyUsage,
-                            UsageType.SMS
-                    );
-
-            BigDecimal actualRoaming =
-                    getUsageValue(
-                            monthlyUsage,
-                            UsageType.ROAMING
-                    );
-
-            boolean valid =
-                    actualData.compareTo(
-                            expectedData
+                    ).compareTo(
+                            getUsageValue(
+                                    monthlyBefore,
+                                    UsageType.DATA
+                            ).add(
+                                    new BigDecimal("2.500")
+                            )
                     ) == 0
                             &&
-                            actualVoice.compareTo(
-                                    expectedVoice
+                            getUsageValue(
+                                    monthlyUsage,
+                                    UsageType.VOICE
+                            ).compareTo(
+                                    getUsageValue(
+                                            monthlyBefore,
+                                            UsageType.VOICE
+                                    ).add(
+                                            new BigDecimal("120.000")
+                                    )
                             ) == 0
                             &&
-                            actualSms.compareTo(
-                                    expectedSms
+                            getUsageValue(
+                                    monthlyUsage,
+                                    UsageType.SMS
+                            ).compareTo(
+                                    getUsageValue(
+                                            monthlyBefore,
+                                            UsageType.SMS
+                                    ).add(
+                                            new BigDecimal("45.000")
+                                    )
                             ) == 0
                             &&
-                            actualRoaming.compareTo(
-                                    expectedRoaming
+                            getUsageValue(
+                                    monthlyUsage,
+                                    UsageType.ROAMING
+                            ).compareTo(
+                                    getUsageValue(
+                                            monthlyBefore,
+                                            UsageType.ROAMING
+                                    ).add(
+                                            new BigDecimal("0.750")
+                                    )
                             ) == 0;
 
             if (valid) {
@@ -669,54 +633,18 @@ public class UsageTest {
                         "Monthly usage by type"
                 );
 
-                printUsageMap(
-                        monthlyUsage
-                );
-
             } else {
 
                 fail(
                         "Monthly usage by type"
-                );
-
-                System.out.println(
-                        "Expected:"
-                );
-
-                System.out.println(
-                        "DATA = " +
-                                expectedData
-                );
-
-                System.out.println(
-                        "VOICE = " +
-                                expectedVoice
-                );
-
-                System.out.println(
-                        "SMS = " +
-                                expectedSms
-                );
-
-                System.out.println(
-                        "ROAMING = " +
-                                expectedRoaming
-                );
-
-                System.out.println(
-                        "Actual:"
-                );
-
-                printUsageMap(
-                        monthlyUsage
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Monthly usage by type: "
-                            + e.getMessage()
+                    "Monthly usage by type: " +
+                            e.getMessage()
             );
         }
 
@@ -733,58 +661,54 @@ public class UsageTest {
             Map<UsageType, BigDecimal> usageByType =
                     usageService.calculateUsageByType();
 
-            BigDecimal expectedData =
-                    getUsageValue(
-                            usageByTypeBefore,
-                            UsageType.DATA
-                    ).add(
-                            new BigDecimal("2.500")
-                    );
-
-            BigDecimal expectedVoice =
-                    getUsageValue(
-                            usageByTypeBefore,
-                            UsageType.VOICE
-                    ).add(
-                            new BigDecimal("120.000")
-                    );
-
-            BigDecimal expectedSms =
-                    getUsageValue(
-                            usageByTypeBefore,
-                            UsageType.SMS
-                    ).add(
-                            new BigDecimal("45.000")
-                    );
-
-            BigDecimal expectedRoaming =
-                    getUsageValue(
-                            usageByTypeBefore,
-                            UsageType.ROAMING
-                    ).add(
-                            new BigDecimal("0.750")
-                    );
-
             boolean valid =
                     getUsageValue(
                             usageByType,
                             UsageType.DATA
-                    ).compareTo(expectedData) == 0
+                    ).compareTo(
+                            getUsageValue(
+                                    usageByTypeBefore,
+                                    UsageType.DATA
+                            ).add(
+                                    new BigDecimal("2.500")
+                            )
+                    ) == 0
                             &&
                             getUsageValue(
                                     usageByType,
                                     UsageType.VOICE
-                            ).compareTo(expectedVoice) == 0
+                            ).compareTo(
+                                    getUsageValue(
+                                            usageByTypeBefore,
+                                            UsageType.VOICE
+                                    ).add(
+                                            new BigDecimal("120.000")
+                                    )
+                            ) == 0
                             &&
                             getUsageValue(
                                     usageByType,
                                     UsageType.SMS
-                            ).compareTo(expectedSms) == 0
+                            ).compareTo(
+                                    getUsageValue(
+                                            usageByTypeBefore,
+                                            UsageType.SMS
+                                    ).add(
+                                            new BigDecimal("45.000")
+                                    )
+                            ) == 0
                             &&
                             getUsageValue(
                                     usageByType,
                                     UsageType.ROAMING
-                            ).compareTo(expectedRoaming) == 0;
+                            ).compareTo(
+                                    getUsageValue(
+                                            usageByTypeBefore,
+                                            UsageType.ROAMING
+                                    ).add(
+                                            new BigDecimal("0.750")
+                                    )
+                            ) == 0;
 
             if (valid) {
 
@@ -792,26 +716,18 @@ public class UsageTest {
                         "Usage by type calculation"
                 );
 
-                printUsageMap(
-                        usageByType
-                );
-
             } else {
 
                 fail(
                         "Usage by type calculation"
-                );
-
-                printUsageMap(
-                        usageByType
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Usage by type calculation: "
-                            + e.getMessage()
+                    "Usage by type calculation: " +
+                            e.getMessage()
             );
         }
 
@@ -837,31 +753,25 @@ public class UsageTest {
                     dataRecord
             );
 
-            UsageRecord updatedRecord =
+            UsageRecord updated =
                     usageService.findById(
                             dataRecord.getUsageId()
                     );
 
-            if (updatedRecord != null &&
-                    updatedRecord.getQuantity()
+            if (updated != null &&
+                    updated.getQuantity()
                             .compareTo(
                                     new BigDecimal("3.500")
+                            ) == 0 &&
+                    updated.getCharge()
+                            .compareTo(
+                                    new BigDecimal("70.00")
                             ) == 0) {
 
                 pass(
                         "Usage update"
                 );
 
-                System.out.println(
-                        "Updated quantity: " +
-                                updatedRecord.getQuantity()
-                );
-
-                System.out.println(
-                        "Updated charge: " +
-                                updatedRecord.getCharge()
-                );
-
             } else {
 
                 fail(
@@ -872,51 +782,70 @@ public class UsageTest {
         } catch (Exception e) {
 
             fail(
-                    "Usage update: "
-                            + e.getMessage()
+                    "Usage update: " +
+                            e.getMessage()
             );
         }
 
         // ==========================================
-        // TEST 14: DELETE USAGE
+        // TEST 14: DELETE ALL TEST RECORDS
         // ==========================================
 
         System.out.println(
-                "\n=== TEST 14: DELETE USAGE ==="
+                "\n=== TEST 14: DELETE TEST USAGE ==="
         );
+
+        boolean cleanupSuccessful = true;
+
+        long[] testUsageIds = {
+                dataRecord.getUsageId(),
+                voiceRecord.getUsageId(),
+                smsRecord.getUsageId(),
+                roamingRecord.getUsageId()
+        };
 
         try {
 
-            long usageId =
-                    smsRecord.getUsageId();
+            for (long usageId : testUsageIds) {
 
-            usageService.delete(
-                    usageId
-            );
+                if (usageId > 0) {
 
-            UsageRecord deletedRecord =
-                    usageService.findById(
+                    usageService.delete(
                             usageId
                     );
+                }
+            }
 
-            if (deletedRecord == null) {
+            for (long usageId : testUsageIds) {
+
+                if (usageId > 0 &&
+                        usageService.findById(
+                                usageId
+                        ) != null) {
+
+                    cleanupSuccessful = false;
+                    break;
+                }
+            }
+
+            if (cleanupSuccessful) {
 
                 pass(
-                        "Usage deletion"
+                        "Test usage cleanup"
                 );
 
             } else {
 
                 fail(
-                        "Usage deletion"
+                        "Test usage cleanup"
                 );
             }
 
         } catch (Exception e) {
 
             fail(
-                    "Usage deletion: "
-                            + e.getMessage()
+                    "Test usage cleanup: " +
+                            e.getMessage()
             );
         }
 
@@ -930,15 +859,15 @@ public class UsageTest {
                     usageService.findAll();
 
             System.out.println(
-                    "\nFinal usage records in database: " +
+                    "\nFinal usage record count: " +
                             finalRecords.size()
             );
 
         } catch (Exception e) {
 
             System.out.println(
-                    "Final record check failed: "
-                            + e.getMessage()
+                    "Final record check failed: " +
+                            e.getMessage()
             );
         }
 
@@ -979,28 +908,17 @@ public class UsageTest {
             UsageType usageType) {
 
         BigDecimal value =
-                usageMap.get(usageType);
+                usageMap.get(
+                        usageType
+                );
 
         return value != null
                 ? value
                 : BigDecimal.ZERO;
     }
 
-    private static void printUsageMap(
-            Map<UsageType, BigDecimal> usageMap) {
-
-        for (Map.Entry<UsageType, BigDecimal> entry
-                : usageMap.entrySet()) {
-
-            System.out.println(
-                    entry.getKey() +
-                            " -> " +
-                            entry.getValue()
-            );
-        }
-    }
-
-    private static void pass(String testName) {
+    private static void pass(
+            String testName) {
 
         passed++;
 
@@ -1010,52 +928,14 @@ public class UsageTest {
         );
     }
 
-    private static void fail(String testName) {
+    private static void fail(
+            String testName) {
 
         failed++;
 
         System.out.println(
                 testName +
                         ": FAILED"
-        );
-    }
-
-    private static void printUsageRecord(
-            UsageRecord usageRecord) {
-
-        System.out.println(
-                "Usage ID: " +
-                        usageRecord.getUsageId()
-        );
-
-        System.out.println(
-                "Subscription ID: " +
-                        usageRecord.getSubscriptionId()
-        );
-
-        System.out.println(
-                "Usage Date: " +
-                        usageRecord.getUsageDate()
-        );
-
-        System.out.println(
-                "Usage Type: " +
-                        usageRecord.getUsageType()
-        );
-
-        System.out.println(
-                "Quantity: " +
-                        usageRecord.getQuantity()
-        );
-
-        System.out.println(
-                "Unit: " +
-                        usageRecord.getUnit()
-        );
-
-        System.out.println(
-                "Charge: " +
-                        usageRecord.getCharge()
         );
     }
 }

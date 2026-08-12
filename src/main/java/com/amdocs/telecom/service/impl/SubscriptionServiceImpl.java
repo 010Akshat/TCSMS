@@ -4,20 +4,25 @@ import com.amdocs.telecom.dao.CustomerDAO;
 import com.amdocs.telecom.dao.PlanDAO;
 import com.amdocs.telecom.dao.SubscriptionDAO;
 import com.amdocs.telecom.dao.SubscriptionHistoryDAO;
+
 import com.amdocs.telecom.dao.impl.CustomerDAOImpl;
 import com.amdocs.telecom.dao.impl.PlanDAOImpl;
 import com.amdocs.telecom.dao.impl.SubscriptionDAOImpl;
 import com.amdocs.telecom.dao.impl.SubscriptionHistoryDAOImpl;
-import com.amdocs.telecom.model.enums.AccountStatus;
+
 import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.model.MobileSubscription;
-import com.amdocs.telecom.model.enums.SimType;
 import com.amdocs.telecom.model.SubscriptionHistory;
+import com.amdocs.telecom.model.TelecomPlan;
+
+import com.amdocs.telecom.model.enums.AccountStatus;
+import com.amdocs.telecom.model.enums.SimType;
 import com.amdocs.telecom.model.enums.SubscriptionStatus;
 import com.amdocs.telecom.model.enums.SubscriptionType;
-import com.amdocs.telecom.model.TelecomPlan;
+
 import com.amdocs.telecom.service.SubscriptionService;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,10 +37,17 @@ public class SubscriptionServiceImpl
 
     public SubscriptionServiceImpl() {
 
-        this.customerDAO = new CustomerDAOImpl();
-        this.planDAO = new PlanDAOImpl();
-        this.subscriptionDAO = new SubscriptionDAOImpl();
-        this.historyDAO = new SubscriptionHistoryDAOImpl();
+        this.customerDAO =
+                new CustomerDAOImpl();
+
+        this.planDAO =
+                new PlanDAOImpl();
+
+        this.subscriptionDAO =
+                new SubscriptionDAOImpl();
+
+        this.historyDAO =
+                new SubscriptionHistoryDAOImpl();
     }
 
     @Override
@@ -47,7 +59,10 @@ public class SubscriptionServiceImpl
             String simType,
             String subscriptionType) {
 
-        // 1. Validate required subscription inputs
+        // ==========================================
+        // 1. VALIDATE INPUTS
+        // ==========================================
+
         if (mobileNumber == null ||
                 mobileNumber.trim().isEmpty()) {
 
@@ -80,35 +95,50 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 2. Customer must exist
+        // ==========================================
+        // 2. CUSTOMER VALIDATION
+        // ==========================================
+
         Customer customer =
-                customerDAO.findById(customerId);
+                customerDAO.findById(
+                        customerId
+                );
 
         if (customer == null) {
+
             throw new IllegalArgumentException(
                     "Customer not found."
             );
         }
 
-        // 3. Plan must exist
+        // ==========================================
+        // 3. PLAN VALIDATION
+        // ==========================================
+
         TelecomPlan plan =
-                planDAO.findById(planId);
+                planDAO.findById(
+                        planId
+                );
 
         if (plan == null) {
+
             throw new IllegalArgumentException(
                     "Plan not found."
             );
         }
 
-        // 4. Inactive plan cannot be selected
-        if (plan.getStatus() != AccountStatus.ACTIVE) {
+        if (plan.getStatus()
+                != AccountStatus.ACTIVE) {
 
             throw new IllegalArgumentException(
                     "Inactive plan cannot be selected."
             );
         }
 
-        // 5. Mobile number cannot already be subscribed
+        // ==========================================
+        // 4. MOBILE NUMBER UNIQUENESS
+        // ==========================================
+
         MobileSubscription existingMobile =
                 subscriptionDAO.findByMobileNumber(
                         mobileNumber.trim()
@@ -121,15 +151,20 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 6. SIM number cannot already be used
+        // ==========================================
+        // 5. SIM NUMBER UNIQUENESS
+        // ==========================================
+
         List<MobileSubscription> allSubscriptions =
                 subscriptionDAO.findAll();
 
         boolean simAlreadyUsed =
                 allSubscriptions.stream()
                         .anyMatch(subscription ->
-                                subscription.getSimNumber()
-                                        .equals(simNumber.trim())
+                                simNumber.trim()
+                                        .equals(
+                                                subscription.getSimNumber()
+                                        )
                         );
 
         if (simAlreadyUsed) {
@@ -139,7 +174,10 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 7. Parse SIM type
+        // ==========================================
+        // 6. PARSE SIM TYPE
+        // ==========================================
+
         SimType simTypeValue;
 
         try {
@@ -156,14 +194,19 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 8. Parse subscription type
+        // ==========================================
+        // 7. PARSE SUBSCRIPTION TYPE
+        // ==========================================
+
         SubscriptionType subscriptionTypeValue;
 
         try {
 
             subscriptionTypeValue =
                     SubscriptionType.valueOf(
-                            subscriptionType.trim().toUpperCase()
+                            subscriptionType
+                                    .trim()
+                                    .toUpperCase()
                     );
 
         } catch (IllegalArgumentException e) {
@@ -173,11 +216,17 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 9. Generate subscription number
+        // ==========================================
+        // 8. GENERATE SUBSCRIPTION NUMBER
+        // ==========================================
+
         String subscriptionNumber =
                 generateSubscriptionNumber();
 
-        // 10. Create subscription
+        // ==========================================
+        // 9. CREATE SUBSCRIPTION
+        // ==========================================
+
         MobileSubscription subscription =
                 new MobileSubscription(
                         0,
@@ -194,8 +243,13 @@ public class SubscriptionServiceImpl
                         null
                 );
 
-        // 11. Save subscription
-        subscriptionDAO.save(subscription);
+        // ==========================================
+        // 10. SAVE
+        // ==========================================
+
+        subscriptionDAO.save(
+                subscription
+        );
 
         return subscription;
     }
@@ -211,7 +265,8 @@ public class SubscriptionServiceImpl
                 subscriptionId,
                 newPlanId,
                 changeReason,
-                changedBy
+                changedBy,
+                true
         );
     }
 
@@ -226,7 +281,8 @@ public class SubscriptionServiceImpl
                 subscriptionId,
                 newPlanId,
                 changeReason,
-                changedBy
+                changedBy,
+                false
         );
     }
 
@@ -234,9 +290,33 @@ public class SubscriptionServiceImpl
             long subscriptionId,
             long newPlanId,
             String changeReason,
-            String changedBy) {
+            String changedBy,
+            boolean upgrade) {
 
-        // 1. Subscription must exist
+        // ==========================================
+        // 1. VALIDATE CHANGE DETAILS
+        // ==========================================
+
+        if (changeReason == null ||
+                changeReason.trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Change reason is mandatory."
+            );
+        }
+
+        if (changedBy == null ||
+                changedBy.trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Changed by is mandatory."
+            );
+        }
+
+        // ==========================================
+        // 2. FIND SUBSCRIPTION
+        // ==========================================
+
         MobileSubscription subscription =
                 subscriptionDAO.findById(
                         subscriptionId
@@ -249,9 +329,14 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 2. New plan must exist
+        // ==========================================
+        // 3. FIND NEW PLAN
+        // ==========================================
+
         TelecomPlan newPlan =
-                planDAO.findById(newPlanId);
+                planDAO.findById(
+                        newPlanId
+                );
 
         if (newPlan == null) {
 
@@ -260,31 +345,102 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 3. New plan must be active
-        if (newPlan.getStatus() != AccountStatus.ACTIVE) {
+        // ==========================================
+        // 4. NEW PLAN MUST BE ACTIVE
+        // ==========================================
+
+        if (newPlan.getStatus()
+                != AccountStatus.ACTIVE) {
 
             throw new IllegalArgumentException(
                     "Inactive plan cannot be selected."
             );
         }
 
-        // 4. New plan must differ from current plan
-        if (subscription.getPlanId() == newPlanId) {
+        // ==========================================
+        // 5. PLAN MUST BE DIFFERENT
+        // ==========================================
+
+        long oldPlanId =
+                subscription.getPlanId();
+
+        if (oldPlanId == newPlanId) {
 
             throw new IllegalArgumentException(
                     "Connection is already using this plan."
             );
         }
 
-        long oldPlanId =
-                subscription.getPlanId();
+        // ==========================================
+        // 6. GET OLD PLAN
+        // ==========================================
 
-        // 5. Update subscription plan
-        subscription.setPlanId(newPlanId);
+        TelecomPlan oldPlan =
+                planDAO.findById(
+                        oldPlanId
+                );
 
-        subscriptionDAO.update(subscription);
+        if (oldPlan == null) {
 
-        // 6. Record plan change history
+            throw new IllegalArgumentException(
+                    "Current plan not found."
+            );
+        }
+
+        BigDecimal oldRental =
+                oldPlan.getMonthlyRental();
+
+        BigDecimal newRental =
+                newPlan.getMonthlyRental();
+
+        if (oldRental == null ||
+                newRental == null) {
+
+            throw new IllegalArgumentException(
+                    "Plan rental is missing."
+            );
+        }
+
+        // ==========================================
+        // 7. UPGRADE VALIDATION
+        // ==========================================
+
+        if (upgrade &&
+                newRental.compareTo(oldRental) <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Upgrade plan must have a higher monthly rental."
+            );
+        }
+
+        // ==========================================
+        // 8. DOWNGRADE VALIDATION
+        // ==========================================
+
+        if (!upgrade &&
+                newRental.compareTo(oldRental) >= 0) {
+
+            throw new IllegalArgumentException(
+                    "Downgrade plan must have a lower monthly rental."
+            );
+        }
+
+        // ==========================================
+        // 9. UPDATE SUBSCRIPTION
+        // ==========================================
+
+        subscription.setPlanId(
+                newPlanId
+        );
+
+        subscriptionDAO.update(
+                subscription
+        );
+
+        // ==========================================
+        // 10. RECORD HISTORY
+        // ==========================================
+
         SubscriptionHistory history =
                 new SubscriptionHistory(
                         0,
@@ -292,11 +448,13 @@ public class SubscriptionServiceImpl
                         oldPlanId,
                         newPlanId,
                         LocalDateTime.now(),
-                        changeReason,
-                        changedBy
+                        changeReason.trim(),
+                        changedBy.trim()
                 );
 
-        historyDAO.save(history);
+        historyDAO.save(
+                history
+        );
     }
 
     @Override
@@ -306,7 +464,10 @@ public class SubscriptionServiceImpl
             String changeReason,
             String changedBy) {
 
-        // 1. Validate input
+        // ==========================================
+        // 1. VALIDATE INPUT
+        // ==========================================
+
         if (newSubscriptionType == null ||
                 newSubscriptionType.trim().isEmpty()) {
 
@@ -315,7 +476,26 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 2. Subscription must exist
+        if (changeReason == null ||
+                changeReason.trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Change reason is mandatory."
+            );
+        }
+
+        if (changedBy == null ||
+                changedBy.trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Changed by is mandatory."
+            );
+        }
+
+        // ==========================================
+        // 2. FIND SUBSCRIPTION
+        // ==========================================
+
         MobileSubscription subscription =
                 subscriptionDAO.findById(
                         subscriptionId
@@ -328,7 +508,10 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 3. Parse subscription type
+        // ==========================================
+        // 3. PARSE NEW TYPE
+        // ==========================================
+
         SubscriptionType newType;
 
         try {
@@ -347,7 +530,10 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 4. Reject same type
+        // ==========================================
+        // 4. SAME TYPE CHECK
+        // ==========================================
+
         if (subscription.getSubscriptionType()
                 == newType) {
 
@@ -356,10 +542,17 @@ public class SubscriptionServiceImpl
             );
         }
 
-        // 5. Update subscription type
-        subscription.setSubscriptionType(newType);
+        // ==========================================
+        // 5. UPDATE
+        // ==========================================
 
-        subscriptionDAO.update(subscription);
+        subscription.setSubscriptionType(
+                newType
+        );
+
+        subscriptionDAO.update(
+                subscription
+        );
     }
 
     @Override
@@ -378,11 +571,21 @@ public class SubscriptionServiceImpl
             );
         }
 
+        if (subscription.getStatus()
+                == SubscriptionStatus.ACTIVE) {
+
+            throw new IllegalArgumentException(
+                    "Subscription is already active."
+            );
+        }
+
         subscription.setStatus(
                 SubscriptionStatus.ACTIVE
         );
 
-        subscriptionDAO.update(subscription);
+        subscriptionDAO.update(
+                subscription
+        );
     }
 
     @Override
@@ -401,11 +604,21 @@ public class SubscriptionServiceImpl
             );
         }
 
+        if (subscription.getStatus()
+                == SubscriptionStatus.INACTIVE) {
+
+            throw new IllegalArgumentException(
+                    "Subscription is already inactive."
+            );
+        }
+
         subscription.setStatus(
                 SubscriptionStatus.INACTIVE
         );
 
-        subscriptionDAO.update(subscription);
+        subscriptionDAO.update(
+                subscription
+        );
     }
 
     @Override
@@ -442,7 +655,9 @@ public class SubscriptionServiceImpl
             long customerId) {
 
         return subscriptionDAO
-                .findByCustomerId(customerId);
+                .findByCustomerId(
+                        customerId
+                );
     }
 
     @Override
@@ -467,14 +682,16 @@ public class SubscriptionServiceImpl
                 subscriptionDAO.findAll();
 
         long nextNumber =
-                100001L + subscriptions.size();
+                100001L +
+                        subscriptions.size();
 
         String subscriptionNumber;
 
         do {
 
             subscriptionNumber =
-                    "SUB" + nextNumber;
+                    "SUB" +
+                            nextNumber;
 
             nextNumber++;
 
