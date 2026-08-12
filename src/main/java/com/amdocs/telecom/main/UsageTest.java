@@ -1,7 +1,7 @@
 package com.amdocs.telecom.main;
 
 import com.amdocs.telecom.model.UsageRecord;
-import com.amdocs.telecom.model.UsageType;
+import com.amdocs.telecom.model.enums.UsageType;
 import com.amdocs.telecom.service.UsageService;
 import com.amdocs.telecom.service.impl.UsageServiceImpl;
 

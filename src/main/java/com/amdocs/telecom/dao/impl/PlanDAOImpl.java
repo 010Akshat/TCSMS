@@ -1,8 +1,8 @@
 package com.amdocs.telecom.dao.impl;
 
 import com.amdocs.telecom.dao.PlanDAO;
-import com.amdocs.telecom.model.AccountStatus;
-import com.amdocs.telecom.model.PlanType;
+import com.amdocs.telecom.model.enums.AccountStatus;
+import com.amdocs.telecom.model.enums.PlanType;
 import com.amdocs.telecom.model.TelecomPlan;
 import com.amdocs.telecom.util.DBConnection;
 

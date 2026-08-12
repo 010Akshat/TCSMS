@@ -1,5 +1,8 @@
 package com.amdocs.telecom.model;
 
+import com.amdocs.telecom.model.enums.PaymentMode;
+import com.amdocs.telecom.model.enums.PaymentStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

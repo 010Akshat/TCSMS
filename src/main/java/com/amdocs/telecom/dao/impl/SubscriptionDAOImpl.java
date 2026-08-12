@@ -2,9 +2,9 @@ package com.amdocs.telecom.dao.impl;
 
 import com.amdocs.telecom.dao.SubscriptionDAO;
 import com.amdocs.telecom.model.MobileSubscription;
-import com.amdocs.telecom.model.SimType;
-import com.amdocs.telecom.model.SubscriptionStatus;
-import com.amdocs.telecom.model.SubscriptionType;
+import com.amdocs.telecom.model.enums.SimType;
+import com.amdocs.telecom.model.enums.SubscriptionStatus;
+import com.amdocs.telecom.model.enums.SubscriptionType;
 import com.amdocs.telecom.util.DBConnection;
 
 import java.sql.Connection;

@@ -10,11 +10,11 @@ import com.amdocs.telecom.dao.impl.PaymentDAOImpl;
 import com.amdocs.telecom.dao.impl.SubscriptionDAOImpl;
 import com.amdocs.telecom.model.AuditLog;
 import com.amdocs.telecom.model.Bill;
-import com.amdocs.telecom.model.BillStatus;
+import com.amdocs.telecom.model.enums.BillStatus;
 import com.amdocs.telecom.model.MobileSubscription;
 import com.amdocs.telecom.model.Payment;
-import com.amdocs.telecom.model.PaymentMode;
-import com.amdocs.telecom.model.PaymentStatus;
+import com.amdocs.telecom.model.enums.PaymentMode;
+import com.amdocs.telecom.model.enums.PaymentStatus;
 import com.amdocs.telecom.service.PaymentService;
 import com.amdocs.telecom.util.DBConnection;
 

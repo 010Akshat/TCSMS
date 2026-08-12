@@ -1,7 +1,7 @@
 package com.amdocs.telecom.service;
 
 import com.amdocs.telecom.model.UsageRecord;
-import com.amdocs.telecom.model.UsageType;
+import com.amdocs.telecom.model.enums.UsageType;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;

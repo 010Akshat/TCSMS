@@ -1,5 +1,8 @@
 package com.amdocs.telecom.model;
 
+import com.amdocs.telecom.model.enums.AccountStatus;
+import com.amdocs.telecom.model.enums.PlanType;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

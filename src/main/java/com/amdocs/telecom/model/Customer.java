@@ -1,5 +1,7 @@
 package com.amdocs.telecom.model;
 
+import com.amdocs.telecom.model.enums.AccountStatus;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 

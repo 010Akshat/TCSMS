@@ -1,7 +1,7 @@
 package com.amdocs.telecom.dao.impl;
 
 import com.amdocs.telecom.dao.CustomerDAO;
-import com.amdocs.telecom.model.AccountStatus;
+import com.amdocs.telecom.model.enums.AccountStatus;
 import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.util.DBConnection;
 

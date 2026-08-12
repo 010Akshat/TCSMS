@@ -3,7 +3,7 @@ package com.amdocs.telecom.service.impl;
 import com.amdocs.telecom.dao.UsageDAO;
 import com.amdocs.telecom.dao.impl.UsageDAOImpl;
 import com.amdocs.telecom.model.UsageRecord;
-import com.amdocs.telecom.model.UsageType;
+import com.amdocs.telecom.model.enums.UsageType;
 import com.amdocs.telecom.service.UsageService;
 
 import java.math.BigDecimal;

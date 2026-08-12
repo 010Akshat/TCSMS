@@ -1,5 +1,7 @@
 package com.amdocs.telecom.model;
 
+import com.amdocs.telecom.model.enums.BillStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

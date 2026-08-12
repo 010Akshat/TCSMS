@@ -5,7 +5,7 @@ import com.amdocs.telecom.dao.UsageDAO;
 import com.amdocs.telecom.dao.impl.PlanDAOImpl;
 import com.amdocs.telecom.dao.impl.UsageDAOImpl;
 import com.amdocs.telecom.model.Bill;
-import com.amdocs.telecom.model.BillStatus;
+import com.amdocs.telecom.model.enums.BillStatus;
 import com.amdocs.telecom.model.TelecomPlan;
 import com.amdocs.telecom.model.UsageRecord;
 import com.amdocs.telecom.service.BillingService;

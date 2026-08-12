@@ -10,27 +10,37 @@ import java.util.List;
 
 public class PlanTest {
 
+    private static int passed = 0;
+    private static int failed = 0;
+
+
     public static void main(String[] args) {
 
         PlanService planService =
                 new PlanServiceImpl();
+
 
         System.out.println(
                 "=== PLAN MODULE TEST ==="
         );
 
 
-        // ==========================================
-        // 1. FIND PLAN BY ID
-        // ==========================================
-
         TelecomPlan plan =
                 planService.findById(1);
 
+
+        // ==========================================
+        // TEST 1: FIND PLAN BY ID
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 1: FIND PLAN BY ID ==="
+        );
+
         if (plan != null) {
 
-            System.out.println(
-                    "Find by ID: PASSED"
+            pass(
+                    "Find plan by ID"
             );
 
             System.out.println(
@@ -42,195 +52,381 @@ public class PlanTest {
 
         } else {
 
-            System.out.println(
-                    "Find by ID: FAILED"
+            fail(
+                    "Find plan by ID"
             );
         }
 
 
+
         // ==========================================
-        // 2. FIND PLAN BY CODE
+        // TEST 2: FIND PLAN BY CODE
         // ==========================================
 
-        TelecomPlan planByCode =
-                planService.findByCode(
-                        "PLAN-102"
+        System.out.println(
+                "\n=== TEST 2: FIND PLAN BY CODE ==="
+        );
+
+
+        if (plan != null) {
+
+            TelecomPlan planByCode =
+                    planService.findByCode(
+                            plan.getPlanCode()
+                    );
+
+
+            if (planByCode != null &&
+                    planByCode.getPlanId()
+                            == plan.getPlanId()) {
+
+                pass(
+                        "Find plan by code"
                 );
 
-        if (planByCode != null) {
+            } else {
 
-            System.out.println(
-                    "Find by code: PASSED"
-            );
+                fail(
+                        "Find plan by code"
+                );
+            }
 
         } else {
 
-            System.out.println(
-                    "Find by code: FAILED"
+            fail(
+                    "Find plan by code"
             );
         }
 
 
+
         // ==========================================
-        // 3. FIND ALL PLANS
+        // TEST 3: FIND ALL PLANS
         // ==========================================
+
+        System.out.println(
+                "\n=== TEST 3: FIND ALL PLANS ==="
+        );
+
 
         List<TelecomPlan> allPlans =
                 planService.findAll();
 
-        System.out.println(
-                "Total plans: " +
-                        allPlans.size()
-        );
 
-        if (allPlans.size() == 5) {
+        if (allPlans != null &&
+                !allPlans.isEmpty()) {
+
+            pass(
+                    "Find all plans"
+            );
 
             System.out.println(
-                    "Find all plans: PASSED"
+                    "Total plans: " +
+                            allPlans.size()
             );
 
         } else {
 
-            System.out.println(
-                    "Find all plans: FAILED"
+            fail(
+                    "Find all plans"
             );
         }
 
 
+
         // ==========================================
-        // 4. ACTIVE PLANS
+        // TEST 4: FIND ACTIVE PLANS
         // ==========================================
+
+        System.out.println(
+                "\n=== TEST 4: FIND ACTIVE PLANS ==="
+        );
+
 
         List<TelecomPlan> activePlans =
                 planService.findActivePlans();
 
-        System.out.println(
-                "Active plans: " +
-                        activePlans.size()
-        );
 
-        if (activePlans.size() == 5) {
+        boolean activeValid =
+                activePlans != null &&
+                        activePlans.stream()
+                                .allMatch(p ->
+                                        p.getStatus()
+                                                .name()
+                                                .equals(
+                                                        "ACTIVE"
+                                                )
+                                );
+
+
+        if (activeValid) {
+
+            pass(
+                    "Find active plans"
+            );
 
             System.out.println(
-                    "Find active plans: PASSED"
+                    "Active plans: " +
+                            activePlans.size()
+            );
+
+        } else {
+
+            fail(
+                    "Find active plans"
+            );
+        }
+
+
+
+        // ==========================================
+        // TEST 5: FILTER BY PRICE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 5: FILTER BY PRICE ==="
+        );
+
+
+        BigDecimal priceLimit =
+                new BigDecimal("700.00");
+
+
+        List<TelecomPlan> priceFiltered =
+                planService.filterByPrice(
+                        priceLimit
+                );
+
+
+        boolean priceValid =
+                priceFiltered.stream()
+                        .allMatch(p ->
+                                p.getMonthlyRental()
+                                        .compareTo(
+                                                priceLimit
+                                        ) <= 0
+                        );
+
+
+        if (priceValid) {
+
+            pass(
+                    "Filter by price"
+            );
+
+        } else {
+
+            fail(
+                    "Filter by price"
+            );
+        }
+
+
+
+        // ==========================================
+        // TEST 6: FILTER BY DATA
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 6: FILTER BY DATA ==="
+        );
+
+
+        BigDecimal dataLimit =
+                new BigDecimal("50.00");
+
+
+        List<TelecomPlan> dataFiltered =
+                planService.filterByDataAllowance(
+                        dataLimit
+                );
+
+
+        boolean dataValid =
+                dataFiltered.stream()
+                        .allMatch(p ->
+                                p.getDataAllowanceGB()
+                                        .compareTo(
+                                                dataLimit
+                                        ) >= 0
+                        );
+
+
+        if (dataValid) {
+
+            pass(
+                    "Filter by data allowance"
+            );
+
+        } else {
+
+            fail(
+                    "Filter by data allowance"
+            );
+        }
+
+
+
+        // ==========================================
+        // TEST 7: SORT BY PRICE
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 7: SORT BY PRICE ==="
+        );
+
+
+        List<TelecomPlan> sortedPlans =
+                planService.sortByPrice();
+
+
+        boolean sortedValid = true;
+
+
+        for(int i = 0;
+            i < sortedPlans.size()-1;
+            i++) {
+
+
+            if(sortedPlans.get(i)
+                    .getMonthlyRental()
+                    .compareTo(
+                            sortedPlans.get(i+1)
+                                    .getMonthlyRental()
+                    ) > 0) {
+
+                sortedValid = false;
+                break;
+            }
+        }
+
+
+        if(sortedValid) {
+
+            pass(
+                    "Sort by price"
+            );
+
+        } else {
+
+            fail(
+                    "Sort by price"
+            );
+        }
+
+
+
+        // ==========================================
+        // TEST 8: COMPARE PLANS
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 8: COMPARE PLANS ==="
+        );
+
+
+        if(allPlans.size() >= 2) {
+
+
+            List<Long> ids =
+                    Arrays.asList(
+                            allPlans.get(0)
+                                    .getPlanId(),
+
+                            allPlans.get(1)
+                                    .getPlanId()
+                    );
+
+
+            List<TelecomPlan> compared =
+                    planService.comparePlans(
+                            ids
+                    );
+
+
+            if(compared.size()
+                    == ids.size()) {
+
+                pass(
+                        "Compare plans"
+                );
+
+            } else {
+
+                fail(
+                        "Compare plans"
+                );
+            }
+
+        } else {
+
+            fail(
+                    "Compare plans"
+            );
+        }
+
+
+
+        // ==========================================
+        // FINAL RESULT
+        // ==========================================
+
+        System.out.println(
+                "\n================================"
+        );
+
+        System.out.println(
+                "TOTAL PASSED: " +
+                        passed
+        );
+
+        System.out.println(
+                "TOTAL FAILED: " +
+                        failed
+        );
+
+        System.out.println(
+                "================================"
+        );
+
+
+        if(failed == 0) {
+
+            System.out.println(
+                    "PLAN MODULE TEST: PASSED"
             );
 
         } else {
 
             System.out.println(
-                    "Find active plans: FAILED"
+                    "PLAN MODULE TEST: FAILED"
             );
         }
+    }
 
 
-        // ==========================================
-        // 5. FILTER BY PRICE
-        // ==========================================
 
-        List<TelecomPlan> priceFilteredPlans =
-                planService.filterByPrice(
-                        new BigDecimal("700.00")
-                );
+    private static void pass(
+            String name) {
+
+        passed++;
 
         System.out.println(
-                "\nPlans <= 700:"
+                name +
+                        ": PASSED"
         );
-
-        for (TelecomPlan p : priceFilteredPlans) {
-
-            System.out.println(
-                    p.getPlanCode() +
-                            " - ₹" +
-                            p.getMonthlyRental()
-            );
-        }
+    }
 
 
-        // ==========================================
-        // 6. FILTER BY DATA ALLOWANCE
-        // ==========================================
 
-        List<TelecomPlan> dataFilteredPlans =
-                planService.filterByDataAllowance(
-                        new BigDecimal("50.00")
-                );
+    private static void fail(
+            String name) {
+
+        failed++;
 
         System.out.println(
-                "\nPlans with >= 50 GB:"
-        );
-
-        for (TelecomPlan p : dataFilteredPlans) {
-
-            System.out.println(
-                    p.getPlanCode() +
-                            " - " +
-                            p.getDataAllowanceGB() +
-                            " GB"
-            );
-        }
-
-
-        // ==========================================
-        // 7. SORT BY PRICE
-        // ==========================================
-
-        List<TelecomPlan> sortedPlans =
-                planService.sortByPrice();
-
-        System.out.println(
-                "\nPlans sorted by price:"
-        );
-
-        for (TelecomPlan p : sortedPlans) {
-
-            System.out.println(
-                    p.getPlanCode() +
-                            " - ₹" +
-                            p.getMonthlyRental()
-            );
-        }
-
-
-        // ==========================================
-        // 8. COMPARE PLANS
-        // ==========================================
-
-        List<TelecomPlan> comparedPlans =
-                planService.comparePlans(
-                        Arrays.asList(
-                                1L,
-                                2L,
-                                4L
-                        )
-                );
-
-        System.out.println(
-                "\nPlan comparison:"
-        );
-
-        for (TelecomPlan p : comparedPlans) {
-
-            System.out.println(
-                    p.getPlanCode() +
-                            " | " +
-                            p.getPlanName() +
-                            " | ₹" +
-                            p.getMonthlyRental() +
-                            " | " +
-                            p.getDataAllowanceGB() +
-                            " GB | " +
-                            p.getVoiceMinutes() +
-                            " min"
-            );
-        }
-
-
-        // ==========================================
-        // COMPLETED
-        // ==========================================
-
-        System.out.println(
-                "\n=== PLAN MODULE TEST COMPLETED ==="
+                name +
+                        ": FAILED"
         );
     }
 }

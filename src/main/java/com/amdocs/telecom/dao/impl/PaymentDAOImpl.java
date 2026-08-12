@@ -2,8 +2,8 @@ package com.amdocs.telecom.dao.impl;
 
 import com.amdocs.telecom.dao.PaymentDAO;
 import com.amdocs.telecom.model.Payment;
-import com.amdocs.telecom.model.PaymentMode;
-import com.amdocs.telecom.model.PaymentStatus;
+import com.amdocs.telecom.model.enums.PaymentMode;
+import com.amdocs.telecom.model.enums.PaymentStatus;
 import com.amdocs.telecom.util.DBConnection;
 
 import java.sql.Connection;

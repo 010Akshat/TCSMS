@@ -1,4 +1,4 @@
-package com.amdocs.telecom.model;
+package com.amdocs.telecom.model.enums;
 
 public enum AccountStatus {
     ACTIVE,

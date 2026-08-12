@@ -2,7 +2,7 @@ package com.amdocs.telecom.dao.impl;
 
 import com.amdocs.telecom.dao.UsageDAO;
 import com.amdocs.telecom.model.UsageRecord;
-import com.amdocs.telecom.model.UsageType;
+import com.amdocs.telecom.model.enums.UsageType;
 import com.amdocs.telecom.util.DBConnection;
 
 import java.sql.Connection;

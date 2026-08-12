@@ -1,5 +1,9 @@
 package com.amdocs.telecom.model;
 
+import com.amdocs.telecom.model.enums.SimType;
+import com.amdocs.telecom.model.enums.SubscriptionStatus;
+import com.amdocs.telecom.model.enums.SubscriptionType;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 

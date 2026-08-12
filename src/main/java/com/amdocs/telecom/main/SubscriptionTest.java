@@ -1,10 +1,10 @@
 package com.amdocs.telecom.main;
 
-import com.amdocs.telecom.model.AccountStatus;
+import com.amdocs.telecom.model.enums.AccountStatus;
 import com.amdocs.telecom.model.MobileSubscription;
 import com.amdocs.telecom.model.SubscriptionHistory;
-import com.amdocs.telecom.model.SubscriptionStatus;
-import com.amdocs.telecom.model.SubscriptionType;
+import com.amdocs.telecom.model.enums.SubscriptionStatus;
+import com.amdocs.telecom.model.enums.SubscriptionType;
 import com.amdocs.telecom.model.TelecomPlan;
 import com.amdocs.telecom.service.PlanService;
 import com.amdocs.telecom.service.SubscriptionService;

@@ -6,7 +6,7 @@ import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.service.CustomerService;
 import com.amdocs.telecom.validation.CustomerValidator;
 import java.util.List;
-import com.amdocs.telecom.model.AccountStatus;
+import com.amdocs.telecom.model.enums.AccountStatus;
 
 
 import java.time.LocalDateTime;

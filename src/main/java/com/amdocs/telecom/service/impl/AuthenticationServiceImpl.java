@@ -6,7 +6,7 @@ import com.amdocs.telecom.dao.PasswordOTPDAO;
 import com.amdocs.telecom.dao.impl.CustomerDAOImpl;
 import com.amdocs.telecom.dao.impl.LoginHistoryDAOImpl;
 import com.amdocs.telecom.dao.impl.PasswordOTPDAOImpl;
-import com.amdocs.telecom.model.AccountStatus;
+import com.amdocs.telecom.model.enums.AccountStatus;
 import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.model.LoginHistory;
 import com.amdocs.telecom.model.PasswordOTP;

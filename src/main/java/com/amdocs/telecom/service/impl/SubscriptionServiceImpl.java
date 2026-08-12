@@ -8,13 +8,13 @@ import com.amdocs.telecom.dao.impl.CustomerDAOImpl;
 import com.amdocs.telecom.dao.impl.PlanDAOImpl;
 import com.amdocs.telecom.dao.impl.SubscriptionDAOImpl;
 import com.amdocs.telecom.dao.impl.SubscriptionHistoryDAOImpl;
-import com.amdocs.telecom.model.AccountStatus;
+import com.amdocs.telecom.model.enums.AccountStatus;
 import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.model.MobileSubscription;
-import com.amdocs.telecom.model.SimType;
+import com.amdocs.telecom.model.enums.SimType;
 import com.amdocs.telecom.model.SubscriptionHistory;
-import com.amdocs.telecom.model.SubscriptionStatus;
-import com.amdocs.telecom.model.SubscriptionType;
+import com.amdocs.telecom.model.enums.SubscriptionStatus;
+import com.amdocs.telecom.model.enums.SubscriptionType;
 import com.amdocs.telecom.model.TelecomPlan;
 import com.amdocs.telecom.service.SubscriptionService;
 

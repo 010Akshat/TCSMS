@@ -1,8 +1,8 @@
 package com.amdocs.telecom.service;
 
 import com.amdocs.telecom.model.Payment;
-import com.amdocs.telecom.model.PaymentMode;
-import com.amdocs.telecom.model.PaymentStatus;
+import com.amdocs.telecom.model.enums.PaymentMode;
+import com.amdocs.telecom.model.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.util.List;

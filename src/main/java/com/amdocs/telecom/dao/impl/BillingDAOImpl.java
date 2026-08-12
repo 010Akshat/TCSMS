@@ -2,7 +2,7 @@ package com.amdocs.telecom.dao.impl;
 
 import com.amdocs.telecom.dao.BillingDAO;
 import com.amdocs.telecom.model.Bill;
-import com.amdocs.telecom.model.BillStatus;
+import com.amdocs.telecom.model.enums.BillStatus;
 import com.amdocs.telecom.util.DBConnection;
 
 import java.sql.Connection;
