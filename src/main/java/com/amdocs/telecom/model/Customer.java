@@ -184,4 +184,31 @@ public class Customer {
     public void setLastLogin(LocalDateTime lastLogin) {
         this.lastLogin = lastLogin;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+
+        if (this == obj) {
+            return true;
+        }
+
+
+        if (!(obj instanceof Customer)) {
+            return false;
+        }
+
+
+        Customer customer = (Customer) obj;
+
+
+        return customerId == customer.customerId;
+    }
+
+
+
+    @Override
+    public int hashCode() {
+
+        return Long.hashCode(customerId);
+    }
 }
