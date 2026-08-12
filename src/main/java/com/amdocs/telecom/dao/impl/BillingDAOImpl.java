@@ -146,6 +146,43 @@ public class BillingDAOImpl implements BillingDAO {
     }
 
     @Override
+    public Bill findById(
+            long billId,
+            Connection connection) {
+
+        String sql =
+                "SELECT * FROM bills " +
+                        "WHERE bill_id = ?";
+
+        try (PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+            statement.setLong(
+                    1,
+                    billId
+            );
+
+            try (ResultSet resultSet =
+                         statement.executeQuery()) {
+
+                if (resultSet.next()) {
+                    return mapResultSetToBill(
+                            resultSet
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Failed to find bill in transaction.",
+                    e
+            );
+        }
+
+        return null;
+    }
+    @Override
     public Bill findByBillNumber(
             String billNumber) {
 
@@ -397,6 +434,98 @@ public class BillingDAOImpl implements BillingDAO {
 
             throw new RuntimeException(
                     "Failed to update bill.",
+                    e
+            );
+        }
+    }
+
+    @Override
+    public void update(
+            Bill bill,
+            Connection connection) {
+
+        String sql =
+                "UPDATE bills SET " +
+                        "bill_number = ?, " +
+                        "subscription_id = ?, " +
+                        "billing_month = ?, " +
+                        "plan_rental = ?, " +
+                        "usage_charges = ?, " +
+                        "tax_amount = ?, " +
+                        "discount = ?, " +
+                        "total_amount = ?, " +
+                        "due_date = ?, " +
+                        "bill_status = ? " +
+                        "WHERE bill_id = ?";
+
+        try (PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+            statement.setString(
+                    1,
+                    bill.getBillNumber()
+            );
+
+            statement.setLong(
+                    2,
+                    bill.getSubscriptionId()
+            );
+
+            statement.setDate(
+                    3,
+                    Date.valueOf(
+                            bill.getBillingMonth()
+                    )
+            );
+
+            statement.setBigDecimal(
+                    4,
+                    bill.getPlanRental()
+            );
+
+            statement.setBigDecimal(
+                    5,
+                    bill.getUsageCharges()
+            );
+
+            statement.setBigDecimal(
+                    6,
+                    bill.getTaxAmount()
+            );
+
+            statement.setBigDecimal(
+                    7,
+                    bill.getDiscount()
+            );
+
+            statement.setBigDecimal(
+                    8,
+                    bill.getTotalAmount()
+            );
+
+            statement.setDate(
+                    9,
+                    Date.valueOf(
+                            bill.getDueDate()
+                    )
+            );
+
+            statement.setString(
+                    10,
+                    bill.getBillStatus().name()
+            );
+
+            statement.setLong(
+                    11,
+                    bill.getBillId()
+            );
+
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+
+            throw new RuntimeException(
+                    "Failed to update bill in transaction.",
                     e
             );
         }
