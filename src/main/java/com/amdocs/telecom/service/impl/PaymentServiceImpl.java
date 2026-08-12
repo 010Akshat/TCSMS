@@ -176,7 +176,7 @@ public class PaymentServiceImpl
                     subscription.getCustomerId();
 
             // ==========================================
-            // 7. DUPLICATE PAYMENT CHECK
+            // 7. CHECK EXISTING PAYMENTS
             // ==========================================
 
             List<Payment> existingPayments =
@@ -185,7 +185,22 @@ public class PaymentServiceImpl
                             connection
                     );
 
-            if (!existingPayments.isEmpty()) {
+            /*
+             * A DECLINED payment is only a failed
+             * payment attempt. It must NOT prevent
+             * a later successful retry.
+             *
+             * Only an existing SUCCESS payment
+             * prevents another payment.
+             */
+            boolean successfulPaymentExists =
+                    existingPayments.stream()
+                            .anyMatch(payment ->
+                                    payment.getPaymentStatus()
+                                            == PaymentStatus.SUCCESS
+                            );
+
+            if (successfulPaymentExists) {
 
                 throw new IllegalArgumentException(
                         "Payment already exists for this bill."
@@ -273,7 +288,7 @@ public class PaymentServiceImpl
         } catch (Exception e) {
 
             // ==========================================
-            // ROLLBACK
+            // 12. ROLLBACK
             // ==========================================
 
             if (connection != null) {

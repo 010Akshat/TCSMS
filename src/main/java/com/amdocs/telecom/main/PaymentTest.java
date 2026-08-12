@@ -1,21 +1,17 @@
 package com.amdocs.telecom.main;
 
+import com.amdocs.telecom.dao.AuditLogDAO;
+import com.amdocs.telecom.dao.impl.AuditLogDAOImpl;
 import com.amdocs.telecom.model.AuditLog;
 import com.amdocs.telecom.model.Bill;
 import com.amdocs.telecom.model.BillStatus;
 import com.amdocs.telecom.model.Payment;
 import com.amdocs.telecom.model.PaymentMode;
+import com.amdocs.telecom.model.PaymentStatus;
 import com.amdocs.telecom.service.BillingService;
 import com.amdocs.telecom.service.PaymentService;
 import com.amdocs.telecom.service.impl.BillingServiceImpl;
 import com.amdocs.telecom.service.impl.PaymentServiceImpl;
-import com.amdocs.telecom.dao.AuditLogDAO;
-import com.amdocs.telecom.dao.impl.AuditLogDAOImpl;
-import com.amdocs.telecom.model.PaymentStatus;
-import com.amdocs.telecom.dao.AuditLogDAO;
-import com.amdocs.telecom.dao.impl.AuditLogDAOImpl;
-import com.amdocs.telecom.model.AuditLog;
-
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -87,7 +83,6 @@ public class PaymentTest {
                         bill.getBillStatus()
         );
 
-
         // ==========================================
         // TEST 1: SUCCESSFUL PAYMENT
         // ==========================================
@@ -110,7 +105,7 @@ public class PaymentTest {
             if (payment != null &&
                     payment.getPaymentId() > 0 &&
                     payment.getPaymentStatus()
-                            == com.amdocs.telecom.model.PaymentStatus.SUCCESS) {
+                            == PaymentStatus.SUCCESS) {
 
                 pass(
                         "Successful payment"
@@ -156,7 +151,6 @@ public class PaymentTest {
             );
         }
 
-
         // ==========================================
         // TEST 2: BILL BECOMES PAID
         // ==========================================
@@ -200,7 +194,6 @@ public class PaymentTest {
             );
         }
 
-
         // ==========================================
         // TEST 3: PAYMENT RETRIEVAL
         // ==========================================
@@ -243,7 +236,6 @@ public class PaymentTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 4: FIND BY TRANSACTION REFERENCE
@@ -289,7 +281,6 @@ public class PaymentTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 5: FIND PAYMENTS BY BILL
@@ -342,11 +333,9 @@ public class PaymentTest {
             );
         }
 
-
-
-// ==========================================
-// TEST 6: SUCCESS AUDIT LOG
-// ==========================================
+        // ==========================================
+        // TEST 6: SUCCESS AUDIT LOG
+        // ==========================================
 
         System.out.println(
                 "\n=== TEST 6: SUCCESS AUDIT LOG ==="
@@ -418,7 +407,6 @@ public class PaymentTest {
             );
         }
 
-
         // ==========================================
         // TEST 7: DUPLICATE PAYMENT
         // ==========================================
@@ -470,7 +458,6 @@ public class PaymentTest {
             }
         }
 
-
         // ==========================================
         // CREATE ANOTHER FRESH TEST BILL
         // FOR ROLLBACK TEST
@@ -489,7 +476,6 @@ public class PaymentTest {
                         18.0,
                         0.00
                 );
-
 
         // ==========================================
         // TEST 8: INVALID AMOUNT
@@ -541,7 +527,6 @@ public class PaymentTest {
                 );
             }
         }
-
 
         // ==========================================
         // TEST 9: VERIFY ROLLBACK
@@ -598,7 +583,6 @@ public class PaymentTest {
             );
         }
 
-
         // ==========================================
         // TEST 10: FIND PAYMENTS BY CUSTOMER
         // ==========================================
@@ -652,8 +636,8 @@ public class PaymentTest {
         }
 
         // ==========================================
-// TEST 11: DECLINED PAYMENT
-// ==========================================
+        // TEST 11: DECLINED PAYMENT
+        // ==========================================
 
         System.out.println(
                 "\n=== TEST 11: DECLINED PAYMENT ==="
@@ -673,9 +657,11 @@ public class PaymentTest {
                         0.00
                 );
 
+        Payment declinedPayment = null;
+
         try {
 
-            Payment declinedPayment =
+            declinedPayment =
                     paymentService.processPayment(
                             declinedBill.getBillId(),
                             declinedBill.getTotalAmount(),
@@ -724,8 +710,8 @@ public class PaymentTest {
         }
 
         // ==========================================
-// TEST 12: DECLINED PAYMENT - BILL + AUDIT
-// ==========================================
+        // TEST 12: DECLINED PAYMENT - BILL + AUDIT
+        // ==========================================
 
         System.out.println(
                 "\n=== TEST 12: DECLINED PAYMENT - BILL + AUDIT ==="
@@ -764,9 +750,6 @@ public class PaymentTest {
 
             } else {
 
-                Payment declinedPayment =
-                        declinedPayments.get(0);
-
                 AuditLogDAO auditLogDAO =
                         new AuditLogDAOImpl();
 
@@ -792,12 +775,14 @@ public class PaymentTest {
 
                     System.out.println(
                             "Payment Status: " +
-                                    declinedPayment.getPaymentStatus()
+                                    declinedPayment
+                                            .getPaymentStatus()
                     );
 
                     System.out.println(
                             "Bill Status: " +
-                                    afterDeclinedPayment.getBillStatus()
+                                    afterDeclinedPayment
+                                            .getBillStatus()
                     );
 
                     System.out.println(
@@ -818,6 +803,174 @@ public class PaymentTest {
                     "Declined payment bill/audit verification: " +
                             e.getMessage()
             );
+        }
+
+        // ==========================================
+        // TEST 13: DECLINED PAYMENT → SUCCESS RETRY
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 13: DECLINED PAYMENT - SUCCESS RETRY ==="
+        );
+
+        Payment retryPayment = null;
+
+        try {
+
+            retryPayment =
+                    paymentService.processPayment(
+                            declinedBill.getBillId(),
+                            declinedBill.getTotalAmount(),
+                            PaymentMode.UPI,
+                            PaymentStatus.SUCCESS
+                    );
+
+            if (retryPayment != null &&
+                    retryPayment.getPaymentId() > 0 &&
+                    retryPayment.getPaymentStatus()
+                            == PaymentStatus.SUCCESS) {
+
+                pass(
+                        "Declined payment success retry"
+                );
+
+                System.out.println(
+                        "Retry Payment ID: " +
+                                retryPayment.getPaymentId()
+                );
+
+                System.out.println(
+                        "Retry Status: " +
+                                retryPayment.getPaymentStatus()
+                );
+
+            } else {
+
+                fail(
+                        "Declined payment success retry"
+                );
+            }
+
+        } catch (Exception e) {
+
+            fail(
+                    "Declined payment success retry: " +
+                            e.getMessage()
+            );
+        }
+
+        // ==========================================
+        // TEST 14: VERIFY RETRY RESULT
+        // ==========================================
+
+        System.out.println(
+                "\n=== TEST 14: VERIFY SUCCESS RETRY RESULT ==="
+        );
+
+        if (declinedPayment == null ||
+                retryPayment == null) {
+
+            fail("Success retry result");
+        } else {
+            try {
+
+                Bill updatedRetryBill =
+                        billingService.findById(
+                                declinedBill.getBillId()
+                        );
+
+                List<Payment> retryPayments =
+                        paymentService.findByBillId(
+                                declinedBill.getBillId()
+                        );
+
+                AuditLogDAO auditLogDAO =
+                        new AuditLogDAOImpl();
+
+                List<AuditLog> retryAuditLogs =
+                        auditLogDAO.findByPaymentId(
+                                retryPayment.getPaymentId()
+                        );
+
+                boolean successAuditFound =
+                        retryAuditLogs.stream()
+                                .anyMatch(audit ->
+                                        "PAYMENT_SUCCESS"
+                                                .equals(
+                                                        audit.getAction()
+                                                )
+                                );
+                final long declinedPaymentId =
+                        declinedPayment.getPaymentId();
+
+                final long retryPaymentId =
+                        retryPayment.getPaymentId();
+
+                boolean declinedStillExists =
+                        retryPayments.stream()
+                                .anyMatch(existing ->
+                                        existing.getPaymentId()
+                                                == declinedPaymentId
+                                );
+
+                boolean successRetryExists =
+                        retryPayments.stream()
+                                .anyMatch(existing ->
+                                        existing.getPaymentId()
+                                                == retryPaymentId
+                                                &&
+                                                existing.getPaymentStatus()
+                                                        == PaymentStatus.SUCCESS
+                                );
+
+                if (updatedRetryBill != null &&
+                        updatedRetryBill.getBillStatus()
+                                == BillStatus.PAID &&
+                        declinedStillExists &&
+                        successRetryExists &&
+                        successAuditFound) {
+
+                    pass(
+                            "Success retry result"
+                    );
+
+                    System.out.println(
+                            "Bill Status: " +
+                                    updatedRetryBill
+                                            .getBillStatus()
+                    );
+
+                    System.out.println(
+                            "Payments for bill: " +
+                                    retryPayments.size()
+                    );
+
+                    System.out.println(
+                            "Declined payment retained: YES"
+                    );
+
+                    System.out.println(
+                            "Successful retry retained: YES"
+                    );
+
+                    System.out.println(
+                            "PAYMENT_SUCCESS audit: YES"
+                    );
+
+                } else {
+
+                    fail(
+                            "Success retry result"
+                    );
+                }
+
+            } catch (Exception e) {
+
+                fail(
+                        "Success retry result: " +
+                                e.getMessage()
+                );
+            }
         }
 
 
@@ -881,45 +1034,6 @@ public class PaymentTest {
         }
 
         return billingMonth;
-    }
-
-    private static void printPayment(
-            Payment payment) {
-
-        System.out.println(
-                "Payment ID: " +
-                        payment.getPaymentId()
-        );
-
-        System.out.println(
-                "Transaction Reference: " +
-                        payment.getTransactionReference()
-        );
-
-        System.out.println(
-                "Bill ID: " +
-                        payment.getBillId()
-        );
-
-        System.out.println(
-                "Customer ID: " +
-                        payment.getCustomerId()
-        );
-
-        System.out.println(
-                "Amount: ₹" +
-                        payment.getAmount()
-        );
-
-        System.out.println(
-                "Payment Mode: " +
-                        payment.getPaymentMode()
-        );
-
-        System.out.println(
-                "Payment Status: " +
-                        payment.getPaymentStatus()
-        );
     }
 
     private static void pass(

@@ -1,11 +1,18 @@
 package com.amdocs.telecom.main;
 
+import com.amdocs.telecom.dao.PlanDAO;
+import com.amdocs.telecom.dao.UsageDAO;
+import com.amdocs.telecom.dao.impl.PlanDAOImpl;
+import com.amdocs.telecom.dao.impl.UsageDAOImpl;
 import com.amdocs.telecom.model.Bill;
 import com.amdocs.telecom.model.BillStatus;
+import com.amdocs.telecom.model.TelecomPlan;
+import com.amdocs.telecom.model.UsageRecord;
 import com.amdocs.telecom.service.BillingService;
 import com.amdocs.telecom.service.impl.BillingServiceImpl;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -18,6 +25,12 @@ public class BillingTest {
 
         BillingService billingService =
                 new BillingServiceImpl();
+
+        PlanDAO planDAO =
+                new PlanDAOImpl();
+
+        UsageDAO usageDAO =
+                new UsageDAOImpl();
 
         System.out.println(
                 "=== BILLING TEST SUITE ==="
@@ -32,33 +45,100 @@ public class BillingTest {
                         1
                 );
 
-        BigDecimal expectedPlanRental =
-                new BigDecimal("699.00");
+        double taxRate = 18.0;
 
-        BigDecimal expectedUsageCharges =
-                new BigDecimal("525.00");
-
-        BigDecimal expectedTax =
-                new BigDecimal("220.32");
-
-        BigDecimal expectedDiscount =
+        BigDecimal discount =
                 new BigDecimal("50.00");
-
-        BigDecimal expectedTotal =
-                new BigDecimal("1394.32");
-
-        LocalDate expectedDueDate =
-                LocalDate.of(
-                        2026,
-                        9,
-                        20
-                );
 
         Bill bill = null;
 
+        // ==========================================
+        // GET CURRENT PLAN
+        // ==========================================
+
+        TelecomPlan plan =
+                planDAO.findById(2);
+
+        if (plan == null) {
+
+            System.out.println(
+                    "Required plan not found."
+            );
+
+            return;
+        }
 
         // ==========================================
-        // TEST 1: GENERATE BILL
+        // CALCULATE EXPECTED USAGE CHARGES
+        // ==========================================
+
+        BigDecimal expectedUsageCharges =
+                usageDAO.findBySubscriptionId(
+                                subscriptionId
+                        )
+                        .stream()
+                        .filter(record ->
+                                record.getUsageDate() != null &&
+                                        record.getUsageDate()
+                                                .getYear()
+                                                ==
+                                                billingMonth.getYear() &&
+                                        record.getUsageDate()
+                                                .getMonthValue()
+                                                ==
+                                                billingMonth
+                                                        .getMonthValue()
+                        )
+                        .map(UsageRecord::getCharge)
+                        .filter(charge ->
+                                charge != null
+                        )
+                        .reduce(
+                                BigDecimal.ZERO,
+                                BigDecimal::add
+                        );
+
+        BigDecimal expectedPlanRental =
+                plan.getMonthlyRental() != null
+                        ? plan.getMonthlyRental()
+                        : BigDecimal.ZERO;
+
+        BigDecimal taxableAmount =
+                expectedPlanRental
+                        .add(expectedUsageCharges);
+
+        BigDecimal taxRateDecimal =
+                BigDecimal.valueOf(taxRate)
+                        .divide(
+                                BigDecimal.valueOf(100),
+                                10,
+                                RoundingMode.HALF_UP
+                        );
+
+        BigDecimal expectedTax =
+                taxableAmount
+                        .multiply(taxRateDecimal)
+                        .setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        );
+
+        BigDecimal expectedTotal =
+                taxableAmount
+                        .add(expectedTax)
+                        .subtract(discount)
+                        .setScale(
+                                2,
+                                RoundingMode.HALF_UP
+                        );
+
+        LocalDate expectedDueDate =
+                billingMonth
+                        .plusMonths(1)
+                        .withDayOfMonth(20);
+
+        // ==========================================
+        // TEST 1: GENERATE / RETRIEVE BILL
         // ==========================================
 
         System.out.println(
@@ -67,12 +147,6 @@ public class BillingTest {
 
         try {
 
-            /*
-             * Make the test reasonably rerunnable.
-             * If the August bill already exists,
-             * retrieve it instead of creating a
-             * duplicate bill.
-             */
             bill =
                     billingService
                             .findBySubscriptionAndMonth(
@@ -86,8 +160,8 @@ public class BillingTest {
                         billingService.generateBill(
                                 subscriptionId,
                                 billingMonth,
-                                18.0,
-                                50.00
+                                taxRate,
+                                discount.doubleValue()
                         );
 
                 System.out.println(
@@ -97,7 +171,7 @@ public class BillingTest {
             } else {
 
                 System.out.println(
-                        "August bill already exists. " +
+                        "Bill already exists. " +
                                 "Using existing bill for verification."
                 );
             }
@@ -127,7 +201,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 2: VERIFY PLAN RENTAL
@@ -159,14 +232,6 @@ public class BillingTest {
                 fail(
                         "Plan rental calculation"
                 );
-
-                printExpectedActual(
-                        "Plan rental",
-                        expectedPlanRental,
-                        bill != null
-                                ? bill.getPlanRental()
-                                : null
-                );
             }
 
         } catch (Exception e) {
@@ -176,7 +241,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 3: VERIFY USAGE CHARGES
@@ -209,12 +273,18 @@ public class BillingTest {
                         "Usage charges calculation"
                 );
 
-                printExpectedActual(
-                        "Usage charges",
-                        expectedUsageCharges,
-                        bill != null
-                                ? bill.getUsageCharges()
-                                : null
+                System.out.println(
+                        "Expected: ₹" +
+                                expectedUsageCharges
+                );
+
+                System.out.println(
+                        "Actual: ₹" +
+                                (
+                                        bill != null
+                                                ? bill.getUsageCharges()
+                                                : null
+                                )
                 );
             }
 
@@ -225,7 +295,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 4: VERIFY TAX
@@ -258,12 +327,18 @@ public class BillingTest {
                         "Tax calculation"
                 );
 
-                printExpectedActual(
-                        "Tax",
-                        expectedTax,
-                        bill != null
-                                ? bill.getTaxAmount()
-                                : null
+                System.out.println(
+                        "Expected: ₹" +
+                                expectedTax
+                );
+
+                System.out.println(
+                        "Actual: ₹" +
+                                (
+                                        bill != null
+                                                ? bill.getTaxAmount()
+                                                : null
+                                )
                 );
             }
 
@@ -274,7 +349,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 5: VERIFY DISCOUNT
@@ -289,7 +363,7 @@ public class BillingTest {
             if (bill != null &&
                     bill.getDiscount()
                             .compareTo(
-                                    expectedDiscount
+                                    discount
                             ) == 0) {
 
                 pass(
@@ -306,14 +380,6 @@ public class BillingTest {
                 fail(
                         "Discount"
                 );
-
-                printExpectedActual(
-                        "Discount",
-                        expectedDiscount,
-                        bill != null
-                                ? bill.getDiscount()
-                                : null
-                );
             }
 
         } catch (Exception e) {
@@ -323,7 +389,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 6: VERIFY TOTAL AMOUNT
@@ -356,12 +421,18 @@ public class BillingTest {
                         "Total amount calculation"
                 );
 
-                printExpectedActual(
-                        "Total amount",
-                        expectedTotal,
-                        bill != null
-                                ? bill.getTotalAmount()
-                                : null
+                System.out.println(
+                        "Expected: ₹" +
+                                expectedTotal
+                );
+
+                System.out.println(
+                        "Actual: ₹" +
+                                (
+                                        bill != null
+                                                ? bill.getTotalAmount()
+                                                : null
+                                )
                 );
             }
 
@@ -372,7 +443,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 7: VERIFY DUE DATE
@@ -405,12 +475,12 @@ public class BillingTest {
                 );
 
                 System.out.println(
-                        "Expected due date: " +
+                        "Expected: " +
                                 expectedDueDate
                 );
 
                 System.out.println(
-                        "Actual due date: " +
+                        "Actual: " +
                                 (
                                         bill != null
                                                 ? bill.getDueDate()
@@ -426,7 +496,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 8: VERIFY BILL STATUS
@@ -456,15 +525,6 @@ public class BillingTest {
                 fail(
                         "Initial bill status"
                 );
-
-                System.out.println(
-                        "Actual status: " +
-                                (
-                                        bill != null
-                                                ? bill.getBillStatus()
-                                                : null
-                                )
-                );
             }
 
         } catch (Exception e) {
@@ -474,7 +534,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 9: FIND BILL BY ID
@@ -499,11 +558,6 @@ public class BillingTest {
                         "Find bill by ID"
                 );
 
-                System.out.println(
-                        "Bill ID: " +
-                                foundBill.getBillId()
-                );
-
             } else {
 
                 fail(
@@ -518,7 +572,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 10: FIND BILL BY NUMBER
@@ -545,11 +598,6 @@ public class BillingTest {
                         "Find bill by number"
                 );
 
-                System.out.println(
-                        "Bill number: " +
-                                foundBill.getBillNumber()
-                );
-
             } else {
 
                 fail(
@@ -565,10 +613,8 @@ public class BillingTest {
             );
         }
 
-
         // ==========================================
-        // TEST 11: FIND BILL BY
-        // SUBSCRIPTION + MONTH
+        // TEST 11: FIND BY SUBSCRIPTION + MONTH
         // ==========================================
 
         System.out.println(
@@ -592,11 +638,6 @@ public class BillingTest {
                         "Find bill by subscription and month"
                 );
 
-                System.out.println(
-                        "Billing month: " +
-                                foundBill.getBillingMonth()
-                );
-
             } else {
 
                 fail(
@@ -612,7 +653,6 @@ public class BillingTest {
             );
         }
 
-
         // ==========================================
         // TEST 12: FIND BY SUBSCRIPTION
         // ==========================================
@@ -624,12 +664,21 @@ public class BillingTest {
         try {
 
             List<Bill> bills =
-                    billingService
-                            .findBySubscriptionId(
-                                    subscriptionId
+                    billingService.findBySubscriptionId(
+                            subscriptionId
+                    );
+
+            final long currentBillId =
+                    bill.getBillId();
+
+            boolean found =
+                    bills.stream()
+                            .anyMatch(existing ->
+                                    existing.getBillId()
+                                            == currentBillId
                             );
 
-            if (!bills.isEmpty()) {
+            if (found) {
 
                 pass(
                         "Find bills by subscription"
@@ -654,7 +703,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // TEST 13: FIND ALL BILLS
@@ -705,7 +753,6 @@ public class BillingTest {
             );
         }
 
-
         // ==========================================
         // TEST 14: DUPLICATE MONTHLY BILL
         // ==========================================
@@ -719,8 +766,8 @@ public class BillingTest {
             billingService.generateBill(
                     subscriptionId,
                     billingMonth,
-                    18.0,
-                    50.00
+                    taxRate,
+                    discount.doubleValue()
             );
 
             fail(
@@ -738,11 +785,6 @@ public class BillingTest {
                         "Duplicate monthly bill rejection"
                 );
 
-                System.out.println(
-                        "Reason: " +
-                                e.getMessage()
-                );
-
             } else {
 
                 fail(
@@ -751,7 +793,6 @@ public class BillingTest {
                 );
             }
         }
-
 
         // ==========================================
         // TEST 15: UPDATE BILL STATUS
@@ -784,11 +825,6 @@ public class BillingTest {
                         "Bill update"
                 );
 
-                System.out.println(
-                        "Updated status: " +
-                                updatedBill.getBillStatus()
-                );
-
             } else {
 
                 fail(
@@ -804,9 +840,8 @@ public class BillingTest {
             );
         }
 
-
         // ==========================================
-        // RESTORE BILL STATUS
+        // RESTORE STATUS
         // ==========================================
 
         try {
@@ -826,7 +861,6 @@ public class BillingTest {
                             e.getMessage()
             );
         }
-
 
         // ==========================================
         // FINAL RESULT
@@ -883,26 +917,6 @@ public class BillingTest {
         System.out.println(
                 testName +
                         ": FAILED"
-        );
-    }
-
-    private static void printExpectedActual(
-            String field,
-            BigDecimal expected,
-            BigDecimal actual) {
-
-        System.out.println(
-                "Expected " +
-                        field +
-                        ": " +
-                        expected
-        );
-
-        System.out.println(
-                "Actual " +
-                        field +
-                        ": " +
-                        actual
         );
     }
 
