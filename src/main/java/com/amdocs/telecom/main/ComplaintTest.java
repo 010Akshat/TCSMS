@@ -1,13 +1,14 @@
 package com.amdocs.telecom.main;
 
 import com.amdocs.telecom.model.Complaint;
-import com.amdocs.telecom.model.enums.ComplaintCategory;
 import com.amdocs.telecom.model.enums.ComplaintStatus;
 import com.amdocs.telecom.service.ComplaintService;
 import com.amdocs.telecom.service.impl.ComplaintServiceImpl;
 
 import java.util.List;
-
+import com.amdocs.telecom.model.Admin;
+import com.amdocs.telecom.service.AdminAuthenticationService;
+import com.amdocs.telecom.service.impl.AdminAuthenticationServiceImpl;
 public class ComplaintTest {
 
     private static int passed = 0;
@@ -17,6 +18,14 @@ public class ComplaintTest {
 
         ComplaintService complaintService =
                 new ComplaintServiceImpl();
+        AdminAuthenticationService authenticationService =
+                new AdminAuthenticationServiceImpl();
+
+        Admin admin =
+                authenticationService.login(
+                        "admin",
+                        "admin123"
+                );
 
         System.out.println(
                 "=== COMPLAINT TEST SUITE ==="
@@ -438,7 +447,7 @@ public class ComplaintTest {
         try {
 
             complaintService.resolveComplaint(
-                    complaint.getComplaintId(),
+                    admin, complaint.getComplaintId(),
                     "Billing amount corrected."
             );
 

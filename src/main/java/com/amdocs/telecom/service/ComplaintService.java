@@ -1,5 +1,6 @@
 package com.amdocs.telecom.service;
 
+import com.amdocs.telecom.model.Admin;
 import com.amdocs.telecom.model.Complaint;
 
 import java.util.List;
@@ -37,7 +38,7 @@ public interface ComplaintService {
     );
 
     void resolveComplaint(
-            long complaintId,
+            Admin admin, long complaintId,
             String resolution
     );
 

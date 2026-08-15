@@ -6,6 +6,7 @@ import com.amdocs.telecom.dao.SubscriptionDAO;
 import com.amdocs.telecom.dao.impl.ComplaintDAOImpl;
 import com.amdocs.telecom.dao.impl.CustomerDAOImpl;
 import com.amdocs.telecom.dao.impl.SubscriptionDAOImpl;
+import com.amdocs.telecom.model.Admin;
 import com.amdocs.telecom.model.Complaint;
 import com.amdocs.telecom.model.Customer;
 import com.amdocs.telecom.model.MobileSubscription;
@@ -15,7 +16,9 @@ import com.amdocs.telecom.service.ComplaintService;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+import com.amdocs.telecom.model.Admin;
+import com.amdocs.telecom.service.AdminAuthenticationService;
+import com.amdocs.telecom.service.impl.AdminAuthenticationServiceImpl;
 public class ComplaintServiceImpl
         implements ComplaintService {
 
@@ -242,7 +245,7 @@ public class ComplaintServiceImpl
 
     @Override
     public void resolveComplaint(
-            long complaintId,
+            Admin admin, long complaintId,
             String resolution) {
 
         Complaint complaint =
